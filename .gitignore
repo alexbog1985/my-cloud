@@ -1,0 +1,83 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+python
+pip-log.txt
+pip-delete-this-directory.txt
+.venv/
+venv.bak/
+env.bak/
+
+# Virtual Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Django
+media/
+staticfiles/
+collectstatic/
+db.sqlite3
+*.sqlite3
+
+# === Django Debug Toolbar ===
+.debug_panel/
+
+# === PyCharm / VS Code ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === Node.js / React / Frontend ===
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+.npm
+.yarn
+
+# Build outputs
+/build/
+/dist/
+/out/
+/coverage/
+*.log
+
+# Environment variables
+*.env
+.env*.local
+
+# React Dev Tools
+.DS_Store
+
+# === Git ===
+.gitattributes
+
+# === OS ===
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Logs and databases ===
+*.sql
+*.sqlite
+
+# === Backup files ===
+*.bak
+*.tmp
+
+# === Local development files ===
+.dockerignore
