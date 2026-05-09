@@ -9,10 +9,9 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-from email.policy import default
+
 from pathlib import Path
 from decouple import config as env_config
-import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,6 +111,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'backend.users.password_validation.CustomPasswordValidator',
+    },
 ]
 
 
@@ -140,12 +142,11 @@ MEDIA_ROOT = env_config('MEDIA_ROOT', default=BASE_DIR / 'media')
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication'
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'EXCEPTION_HANDLER': 'rest_framework_simplejwt.exception_handler',
     'NON_FIELD_ERRORS_KEY': 'error',
 }
 

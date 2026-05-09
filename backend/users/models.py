@@ -4,6 +4,10 @@ from django.db import models
 class User(AbstractUser):
     is_admin = models.BooleanField('Администратор', default=False)
     storage_path = models.CharField('Путь к папке', max_length=255, unique=True)
+    email = models.EmailField('Email', unique=True, null=False, blank=False)
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
 
     def save(self, *args, **kwargs):
         if not self.storage_path:
