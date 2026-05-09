@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Navbar from "../components/layout/Navbar.jsx";
+import Footer from "../components/layout/Footer.jsx";
 
 export default function HomePage() {
   return (
@@ -28,9 +29,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <footer className="bg-light py-3 text-center text-muted">
-        &copy; 2026 My Cloud.
-      </footer>
+      <Footer />
     </div>
   )
 }
