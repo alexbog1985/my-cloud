@@ -24,6 +24,7 @@ env.bak/
 media/
 staticfiles/
 collectstatic/
+migrations/
 db.sqlite3
 *.sqlite3
 

@@ -42,6 +42,8 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'corsheaders',
+
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -153,3 +155,6 @@ if DEBUG:
 
 # login url
 LOGIN_REDIRECT_URL = '/login/'
+
+# User model
+AUTH_USER_MODEL = 'users.User'
