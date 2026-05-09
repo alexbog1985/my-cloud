@@ -1,12 +1,14 @@
-import './App.css'
+import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import HomePage from "./pages/HomePage.jsx";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      App
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage/>} />
+      </Routes>
+    </Router>
   )
 }
 
