@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
+import FilesPage from "./pages/FilesPage.jsx";
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <div className="container">
           <Routes>
             <Route path="/" element={<HomePage/>} />
-            <Route path="register/" element={<RegisterPage/>} />
+            <Route path="register/" element={<RegisterPage />} />
+            <Route path="files/" element={<FilesPage />} />
           </Routes>
         </div>
       </main>
