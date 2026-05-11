@@ -47,6 +47,7 @@ export default function RegisterPage() {
       try {
         const response = await request('/register/', 'POST', formData);
         dispatch(setUser(response.user));
+        dispatch(setToken(response.access));
         navigate('/files')
       } catch (err) {
         dispatch(setError('Ошибка регистрации'))

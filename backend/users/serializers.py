@@ -1,6 +1,6 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .validators import validate_username
@@ -28,22 +28,24 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     username = serializers.CharField(validators=[validate_username])
-    # email = serializers.EmailField(validators=[UniqueValidator(queryset=User.objects.all())])
-
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'password')
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-
         user = User(
             username=validated_data['username'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             email=validated_data['email'],
         )
-
         user.set_password(password)
         user.save()
-        return user
+
+        refresh = RefreshToken.for_user(user)
+        return {
+            'user': UserSerializer(user).data,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
