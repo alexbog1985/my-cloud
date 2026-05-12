@@ -5,6 +5,7 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import FilesPage from "./pages/FilesPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage/>} />
             <Route path="register/" element={<RegisterPage />} />
+            <Route path="login" element={<LoginPage />} />
             <Route path="files/" element={<FilesPage />} />
           </Routes>
         </div>

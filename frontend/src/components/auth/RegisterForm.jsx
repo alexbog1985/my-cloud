@@ -10,9 +10,15 @@ export const FormFields = [
   {name: 'password_confirm', label: 'Подтверждение пароля', type: 'password', required: true},
 ]
 
-export default function RegisterForm({ formData, errors, handleChange, handleSubmit, isLoading }) {
+export default function RegisterForm({
+                                       formData,
+                                       errors,
+                                       handleChange,
+                                       handleSubmit,
+                                       isLoading
+                                     }) {
   return (
-        <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit} noValidate>
       {FormFields.map((field) => (
         <FormInput
           key={field.name}
@@ -31,7 +37,7 @@ export default function RegisterForm({ formData, errors, handleChange, handleSub
         extendClass="w-100 mt-3"
         disabled={isLoading}
       >
-        {isLoading ? 'Загрузка...' :  'Зарегистрироваться'}
+        {isLoading ? 'Загрузка...' : 'Зарегистрироваться'}
       </Button>
     </form>
   )

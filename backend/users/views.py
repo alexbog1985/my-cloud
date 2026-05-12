@@ -29,4 +29,13 @@ class RegisterView(APIView):
         if serializer.is_valid():
             result = serializer.save()
             return Response(result, status=status.HTTP_201_CREATED)
+
+        # errors = {}
+        # for field, field_errors in serializer.errors.items():
+        #     if isinstance(field_errors, list):
+        #         errors[field] = str(field_errors[0])
+        #     else:
+        #         errors[field] = field_errors
+        #
+        # return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

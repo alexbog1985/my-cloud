@@ -4,11 +4,9 @@ import api from "../services/api.js";
 export function useApi() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const request = useCallback(async (url, method = 'GET', body = null, config = {}) => {
     setLoading(true);
-    setError(null);
     setData(null)
 
     try {
@@ -21,9 +19,8 @@ export function useApi() {
       setData(response.data);
       return response.data;
     } catch (err) {
-      const message = err.response?.data || err.message || 'Ошибка сети';
-      setError(message);
-      throw err;
+      const apiError = err.response?.data || err.message || 'Ошибка сети';
+      throw apiError || err;
     } finally {
       setLoading(false);
     }
@@ -31,8 +28,7 @@ export function useApi() {
 
   const clear = useCallback(() => {
     setData(null);
-    setError(null);
   }, [])
 
-  return { data, loading, error, request, clear };
+  return { data, loading, request, clear };
 }
