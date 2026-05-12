@@ -31,14 +31,10 @@ export default function RegisterPage() {
   const isLoading = useSelector(state => state.auth.loading)
   const errors = useSelector(state => state.auth.errors);
 
-  const [formData, setFormData] = useState( {
-    username: '',
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-    password_confirm: ''
-  })
+  const [formData, setFormData] = useState(formFields.reduce((acc, field) => ({
+    ...acc,
+    [field.name]: ''
+  }), {}));
 
   useEffect(() => {
     return () => {
