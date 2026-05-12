@@ -5,7 +5,7 @@ const initialState = {
   token: null,
   isAuthenticated: false,
   loading: false,
-  error: null,
+  errors: {},
 };
 
 const authSlice = createSlice({
@@ -14,24 +14,27 @@ const authSlice = createSlice({
   reducers: {
     setLoading: (state) => {
       state.loading = true;
-      state.error = null;
+      state.errors = {};
     },
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = true;
       state.loading = false;
-      state.error = null;
+      state.errors = {};
     },
-    setError: (state, action) => {
-      state.error = action.payload;
+    setErrors: (state, action) => {
+      state.errors = action.payload;
       state.loading = false;
       state.isAuthenticated = false;
+    },
+    clearErrors: (state) => {
+      state.errors = {};
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      state.error = null;
+      state.errors = {};
       localStorage.removeItem('token');
     },
     setToken: (state, action) => {
@@ -44,9 +47,10 @@ const authSlice = createSlice({
 export const {
   setUser,
   logout,
-  setError,
+  setErrors,
   setLoading,
-  setToken
+  setToken,
+  clearErrors
 } = authSlice.actions;
 
 export default authSlice.reducer;
