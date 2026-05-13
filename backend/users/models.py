@@ -5,6 +5,8 @@ class User(AbstractUser):
     is_admin = models.BooleanField('Администратор', default=False)
     storage_path = models.CharField('Путь к папке', max_length=255, unique=True)
     email = models.EmailField('Email', unique=True, null=False, blank=False)
+    first_name = models.CharField("Имя", max_length=150, blank=False)
+    last_name = models.CharField("Фамилия", max_length=150, blank=False)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
