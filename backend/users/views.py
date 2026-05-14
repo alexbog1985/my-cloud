@@ -1,10 +1,12 @@
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from users.serializers import UserSerializer, RegisterSerializer
+from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
 
 User = get_user_model()
 
@@ -22,20 +24,15 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         pass
 
 class RegisterView(APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             result = serializer.save()
             return Response(result, status=status.HTTP_201_CREATED)
-
-        # errors = {}
-        # for field, field_errors in serializer.errors.items():
-        #     if isinstance(field_errors, list):
-        #         errors[field] = str(field_errors[0])
-        #     else:
-        #         errors[field] = field_errors
-        #
-        # return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
