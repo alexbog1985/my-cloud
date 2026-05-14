@@ -40,6 +40,9 @@ const authSlice = createSlice({
     setToken: (state, action) => {
       state.token = action.payload;
       localStorage.setItem('token', action.payload);
+    },
+    updateToken: (state, action) => {
+      state.token = action.payload;
     }
   }
 });
@@ -50,7 +53,8 @@ export const {
   setErrors,
   setLoading,
   setToken,
-  clearErrors
+  clearErrors,
+  updateToken,
 } = authSlice.actions;
 
 export default authSlice.reducer;
