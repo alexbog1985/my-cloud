@@ -32,5 +32,7 @@ export const validateForm = (formData, fields) => {
     }
   });
 
+  console.log(errors);
+
   return { errors, isValid }
 };

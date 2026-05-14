@@ -1,17 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApi } from "../hooks/useApi.js";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import AuthForm from '../components/ui/AuthForm';
-import { validateForm } from "../components/utils/validationRegister.js";
 import AuthFormLink from "../components/ui/AuthFormLink.jsx";
-import {
-  setLoading,
-  setErrors,
-  setUser,
-  setToken,
-  clearErrors } from "../store/slices/authSlice.js";
-import {formatApiError} from "../components/utils/formatApiError.js";
+import {useAuthForm} from "../hooks/useAuthForm.js";
 
 
 export const formFields = [
@@ -24,61 +14,10 @@ export const formFields = [
 ]
 
 export default function RegisterPage() {
-  const { request } = useApi();
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
 
+  const { formData, handleChange, handleSubmit } = useAuthForm(formFields, '/files')
   const isLoading = useSelector(state => state.auth.loading)
   const errors = useSelector(state => state.auth.errors);
-
-  const [formData, setFormData] = useState(formFields.reduce((acc, field) => ({
-    ...acc,
-    [field.name]: ''
-  }), {}));
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearErrors())
-    };
-  }, [dispatch]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-
-    if (errors[name]) {
-    setErrors({
-        ...errors,
-        [name]: null
-      });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { errors: validationErrors, isValid } = validateForm(formData, formFields);
-
-    if (isValid) {
-      dispatch(setLoading());
-      dispatch(clearErrors());
-
-      try {
-        const response = await request('/register/', 'POST', formData);
-        dispatch(setUser(response.user));
-        dispatch(setToken(response.access));
-        navigate('/files');
-      } catch (err) {
-        const apiErrors = formatApiError(err);
-        dispatch(setErrors(apiErrors));
-      }
-    } else {
-      dispatch(setErrors(validationErrors));
-    }
-  };
 
   return (
     <div className="container py-5">
@@ -92,7 +31,7 @@ export default function RegisterPage() {
             formData={formData}
             errors={errors}
             onChange={handleChange}
-            onSubmit={handleSubmit}
+            onSubmit={(e) => handleSubmit(e, '/register/')}
             isLoading={isLoading}
           />
 

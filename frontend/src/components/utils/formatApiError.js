@@ -8,7 +8,7 @@ export const formatApiError = (apiError) => {
     Object.keys(apiError).forEach((key) => {
       const value = Array.isArray(apiError[key]) ? apiError[key][0] : apiError[key];
 
-      if (key === 'non_field_errors') {
+      if (key === 'non_field_errors' || key === 'general') {
         errors.general = value;
       } else {
         errors[key] = value;
