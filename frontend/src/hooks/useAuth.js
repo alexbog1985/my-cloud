@@ -1,5 +1,5 @@
 import { useDispatch} from "react-redux";
-import { setUser, logout, setToken } from "../store/slices/authSlice.js";
+import { setUser } from "../store/slices/authSlice.js";
 import { useApi } from "./useApi.js";
 
 export function useAuth() {

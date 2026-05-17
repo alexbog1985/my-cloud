@@ -1,10 +1,10 @@
 import { useSelector } from "react-redux";
 import AuthForm from '../components/ui/AuthForm';
 import AuthFormLink from "../components/ui/AuthFormLink.jsx";
-import {useAuthForm} from "../hooks/useAuthForm.js";
+import { useAuthForm } from "../hooks/useAuthForm.js";
 
 
-export const formFields = [
+const formFields = [
   {name: 'username', label: 'Логин', type: 'text', required: true},
   {name: 'first_name', label: 'Имя', type: 'text', required: true},
   {name: 'last_name', label: 'Фамилия', type: 'text', required: true},

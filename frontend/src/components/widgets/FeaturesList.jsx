@@ -1,5 +1,3 @@
-import {Link} from "react-router-dom";
-
 export default function FeaturesList() {
   return (
     <section className="text-center mb-5 py-5">
