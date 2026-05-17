@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -13,20 +13,50 @@ User = get_user_model()
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='me')
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='all')
+    def list_all(self, request):
+        if not request.user.is_admin:
+            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+        users = User.objects.all()
+        serializer = self.get_serializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['delete'], url_path='delete')
     def delete_user(self, request, pk=None):
-        pass
+        if not request.user.is_admin:
+            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            user = User.objects.get(pk=pk)
+            if user == request.user:
+                return Response({"error": "Нельзя удалить самого себя"}, status=status.HTTP_400_BAD_REQUEST)
+            user.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except User.DoesNotExist:
+            return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['patch'], url_path='toggle-admin')
     def toggle_admin(self, request, pk=None):
-        pass
+        if not request.user.is_admin:
+            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            user = User.objects.get(pk=pk)
+            if user == request.user:
+                return Response({"error": "Недостаточно прав"}, status=status.HTTP_400_BAD_REQUEST)
+            user.is_admin = not user.is_admin
+            user.save()
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
