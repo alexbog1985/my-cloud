@@ -6,8 +6,30 @@ import Navbar from "./components/layout/Navbar.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import FilesPage from "./pages/FilesPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import PublicRoute from "./components/auth/PublicRoute.jsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
+import {useDispatch} from "react-redux";
+import {useAuth} from "./hooks/useAuth.js";
+import {useEffect} from "react";
+import {setUser} from "./store/slices/authSlice.js";
+
 
 function App() {
+  const dispatch = useDispatch();
+  const { fetchUser } = useAuth();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchUser().then(user => {
+        if (user) {
+          dispatch(setUser(user));
+        }
+      });
+    }
+  }, [dispatch, fetchUser]);
+
+
   return (
     <Router>
       <div className="d-flex flex-column min-vh-100">
@@ -17,9 +39,21 @@ function App() {
         <div className="container">
           <Routes>
             <Route path="/" element={<HomePage/>} />
-            <Route path="register/" element={<RegisterPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="files/" element={<FilesPage />} />
+            <Route path="register/" element={
+              <PublicRoute>
+                <RegisterPage />
+              </PublicRoute>
+              } />
+            <Route path="login" element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            } />
+            <Route path="files/" element={
+              <ProtectedRoute>
+                <FilesPage />
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </main>

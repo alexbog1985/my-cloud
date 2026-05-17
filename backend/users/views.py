@@ -15,6 +15,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     permission_classes = []
 
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['delete'], url_path='delete')
     def delete_user(self, request, pk=None):
         pass

@@ -52,6 +52,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
 class LoginSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user'] = UserSerializer(self.user).data
+
+        return data
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

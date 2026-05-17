@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useApi } from './useApi';
 import { setLoading, setErrors, setUser, setToken, clearErrors } from "../store/slices/authSlice.js";
 import { formatApiError } from "../components/utils/formatApiError.js";
 import { validateForm } from "../components/utils/authValidators.js";
+import { useApi } from "./useApi.js";
 
 export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', validation = true) => {
   const { request } = useApi();
@@ -49,25 +49,25 @@ export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', valida
     dispatch(clearErrors());
 
     try {
-      const response = await request(apiUrl, 'POST', formData);
+      const response = await request({ url: apiUrl, method: 'POST', data: formData });
 
-      if (response.access) {
-        dispatch(setToken(response.access))
+      if (response.data.access) {
+        dispatch(setToken(response.data.access))
       }
 
-      if (response.refresh) {
-        localStorage.setItem('refreshToken', response.refresh);
+      if (response.data.refresh) {
+        localStorage.setItem('refreshToken', response.data.refresh);
       }
 
-      if (response.user) {
-        dispatch(setUser(response.user));
+      if (response.data.user) {
+        dispatch(setUser(response.data.user));
       }
 
       navigate(onSuccessRedirectPath);
 
     } catch (err) {
       const apiErrors = formatApiError(err);
-      dispatch(setErrors(apiErrors));
+      dispatch(setErrors(apiErrors.response.data));
     }
   }
   return {

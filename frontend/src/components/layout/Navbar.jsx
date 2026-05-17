@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import AuthButtons from "./AuthButtons.jsx";
 
 export default function Navbar() {
   return (
@@ -11,7 +12,7 @@ export default function Navbar() {
         <button
           className="navbar-toggler"
           type="button"
-          data-bs-togle="collapse"
+          data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
@@ -20,17 +21,13 @@ export default function Navbar() {
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
+          <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <Link to="/" className="nav-link active">Главная</Link>
             </li>
-            <li className="nav-item">
-              <Link to="/register" className="nav-link">Регистрация</Link>
-            </li>
-            <li className="nav-item">
-              <Link to="/login" className="nav-link">Войти</Link>
-            </li>
           </ul>
+
+          <AuthButtons />
         </div>
       </div>
     </nav>

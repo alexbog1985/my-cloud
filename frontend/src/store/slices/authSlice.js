@@ -36,6 +36,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.errors = {};
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
     },
     setToken: (state, action) => {
       state.token = action.payload;
@@ -43,7 +44,8 @@ const authSlice = createSlice({
     },
     updateToken: (state, action) => {
       state.token = action.payload;
-    }
+      localStorage.setItem('token', action.payload);
+    },
   }
 });
 

@@ -1,34 +1,42 @@
-import { useState, useCallback } from 'react';
-import api from "../services/api.js";
+import api from '../services/api';
+import { useDispatch } from 'react-redux';
+import {logout, updateToken} from '../store/slices/authSlice';
 
-export function useApi() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+export const useApi = () => {
+  const dispatch = useDispatch();
 
-  const request = useCallback(async (url, method = 'GET', body = null, config = {}) => {
-    setLoading(true);
-    setData(null)
-
+  const request = async (config) => {
     try {
-      const response = await api({
-        url,
-        method,
-        data: body,
-        ...config,
-      });
-      setData(response.data);
-      return response.data;
-    } catch (err) {
-      const apiError = err.response?.data || err.message || 'Ошибка сети';
-      throw apiError || err;
-    } finally {
-      setLoading(false);
+      return await api(config);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          dispatch(logout());
+          window.location = '/login';
+          return Promise.reject(error);
+        }
+
+        try {
+          const response = await api.post('/token/refresh/', { refresh: refreshToken });
+          const newToken = response.data.access;
+
+          dispatch(updateToken(newToken));
+
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${newToken}`,
+          };
+          return await api(config);
+        } catch (refreshError) {
+          dispatch(logout());
+          window.location = '/login';
+          return Promise.reject(refreshError);
+        }
+      }
+      return Promise.reject(error);
     }
-  }, []);
+  };
 
-  const clear = useCallback(() => {
-    setData(null);
-  }, [])
-
-  return { data, loading, request, clear };
-}
+  return { request };
+};
