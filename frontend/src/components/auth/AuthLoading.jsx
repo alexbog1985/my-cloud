@@ -20,7 +20,7 @@ export default function AuthLoading({ children }) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{height: '100vh'}}>
         <div className="spinner-border text-primary" role="status">
-          <span className="">Загрузка...</span>
+          <span className="visually-hidden">Загрузка...</span>
         </div>
       </div>
     );
