@@ -13,7 +13,6 @@ export const useApi = () => {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
           dispatch(logout());
-          window.location = '/login';
           return Promise.reject(error);
         }
 
@@ -30,7 +29,6 @@ export const useApi = () => {
           return await api(config);
         } catch (refreshError) {
           dispatch(logout());
-          window.location = '/login';
           return Promise.reject(refreshError);
         }
       }
