@@ -24,6 +24,7 @@ env.bak/
 media/
 staticfiles/
 collectstatic/
+migrations/
 db.sqlite3
 *.sqlite3
 
@@ -36,6 +37,7 @@ db.sqlite3
 *.swp
 *.swo
 *~
+.gigacode
 
 # === Node.js / React / Frontend ===
 node_modules/
