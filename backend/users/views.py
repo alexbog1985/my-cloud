@@ -42,7 +42,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         except User.DoesNotExist:
             return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
 
-    @action(detail=True, methods=['patch'], url_path='toggle-admin')
+    @action(detail=True, methods=['put'], url_path='toggle-admin')
     def toggle_admin(self, request, pk=None):
         if not request.user.is_admin:
             return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
