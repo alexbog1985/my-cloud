@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AuthButtons from "./AuthButtons.jsx";
 import LoadingIndicator from "../ui/LoadingIndicator.jsx";
+import AdminNavItem from "./AdminNavItem.jsx";
 
 export default function Navbar() {
   const loading = useSelector(state => state.auth.loading);
@@ -42,6 +43,7 @@ export default function Navbar() {
             <li className="nav-item">
               <Link to="/" className="nav-link active">Главная</Link>
             </li>
+            <AdminNavItem />
           </ul>
 
           <AuthButtons />
