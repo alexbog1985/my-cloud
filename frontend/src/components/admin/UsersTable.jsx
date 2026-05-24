@@ -6,14 +6,26 @@ import UserActions from './UserActions';
 const columns = [
   { key: 'user', label: 'Пользователь', render: (user) => (
     <>
-      <strong>{user.username}</strong><br />
-      <small>{user.full_name}</small>
+      <div className="fw-medium">{user.username}</div>
+      <div className="text-muted small">{user.full_name}</div>
 
     </>
   )},
   { key: 'email', label: 'Email', render: (user) => user.email },
-  { key: 'date_joned', label: 'Дата регистрации', render: (user) => new Date(user.date_joined).toLocaleDateString() },
-  { key: 'is_admin', label: 'Администратор', render: (user) => user.is_admin ? 'Да' : 'Нет'},
+  { key: 'date_joined', label: 'Дата регистрации', render: (user) => {
+    const date = new Date(user.date_joined);
+    return (
+      <div>
+        <div>{date.toLocaleDateString()}</div>
+        <div className="text-muted small">{date.toLocaleTimeString()}</div>
+      </div>
+    );
+  } },
+  { key: 'is_admin', label: 'Администратор', render: (user) => (
+    <span className={`badge ${user.is_admin ? 'bg-success' : 'bg-secondary'}`}>
+      {user.is_admin ? 'Да' : 'Нет'}
+    </span>
+  )},
   { key: 'actions', label: 'Действия', render: (user) => <UserActions user={user} /> }
 ];
 
@@ -30,7 +42,7 @@ export default function UsersTable() {
   }
   return (
     <div className="table-responsive">
-      <table className="table table-striped">
+      <table className="table table-striped table-hover align-middle">
         <thead>
           <tr>
             {columns.map((column) => (

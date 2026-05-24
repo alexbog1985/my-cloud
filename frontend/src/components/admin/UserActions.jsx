@@ -17,18 +17,20 @@ export default function UserActions({ user }) {
   };
 
   return (
-    <div className="d-flex gap-2">
+    <div className="d-flex flex-column flex-sm-row gap-2">
       <Button
         variant="outline-primary"
         size="sm"
         onClick={handleToggleAdmin}
-        >
+        extendClass="w-100 w-sm-auto"
+      >
         {user.is_admin ? 'Снять админа' : 'Назначить администратором'}
       </Button>
       <Button
         variant="outline-danger"
         size="sm"
         onClick={handleDeleteUser}
+        extendClass="w-100 w-sm-auto"
       >
         Удалить
       </Button>
