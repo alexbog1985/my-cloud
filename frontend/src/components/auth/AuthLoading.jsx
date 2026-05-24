@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth.js";
 
 export default function AuthLoading({ children }) {

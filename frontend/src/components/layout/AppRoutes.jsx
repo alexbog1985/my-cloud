@@ -5,6 +5,8 @@ import LoginPage from "../../pages/LoginPage.jsx";
 import RegisterPage from "../../pages/RegisterPage.jsx";
 import PublicRoute from "../auth/PublicRoute.jsx";
 import ProtectedRoute from "../auth/ProtectedRoute.jsx";
+import AdminRoute from "../admin/AdminRoute.jsx";
+import AdminPage from "../../pages/AdminPage.jsx";
 
 export default function AppRoutes() {
   return (
@@ -24,6 +26,11 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <FilesPage />
         </ProtectedRoute>
+      } />
+      <Route path="admin/" element={
+        <AdminRoute>
+          <AdminPage />
+        </AdminRoute>
       } />
     </Routes>
   )

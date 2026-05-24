@@ -1,5 +1,5 @@
 import { useDispatch} from "react-redux";
-import { setLoading, setUser } from "../store/slices/authSlice.js";
+import { setLoading, setUser, resetLoading } from "../store/slices/authSlice.js";
 import { useApi } from "./useApi.js";
 import { useCallback } from "react";
 
@@ -17,8 +17,9 @@ export function useAuth() {
       });
       dispatch(setUser(response.data))
     } catch (error) {
-      dispatch(setUser(null))
       console.error(error);
+    } finally {
+      dispatch(resetLoading());
     }
   }, [dispatch, request])
   return { fetchUser };

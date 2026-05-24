@@ -1,11 +1,12 @@
 import api from '../services/api';
 import { useDispatch } from 'react-redux';
+import { useCallback } from 'react';
 import {logout, updateToken} from '../store/slices/authSlice';
 
 export const useApi = () => {
   const dispatch = useDispatch();
 
-  const request = async (config) => {
+  const request = useCallback(async (config) => {
     try {
       return await api(config);
     } catch (error) {
@@ -34,7 +35,7 @@ export const useApi = () => {
       }
       return Promise.reject(error);
     }
-  };
+  }, [dispatch]);
 
   return { request };
 };
