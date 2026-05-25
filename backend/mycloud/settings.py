@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     'users',
+    'files',
 ]
 
 MIDDLEWARE = [
@@ -113,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
     {
-        'NAME': 'backend.users.password_validation.CustomPasswordValidator',
+        'NAME': 'users.password_validation.CustomPasswordValidator',
     },
 ]
 

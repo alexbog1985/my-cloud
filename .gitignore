@@ -38,6 +38,7 @@ db.sqlite3
 *.swo
 *~
 .gigacode
+.gigaide
 
 # === Node.js / React / Frontend ===
 node_modules/
