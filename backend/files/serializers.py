@@ -12,6 +12,7 @@ class FileSerializer(serializers.ModelSerializer):
             'upload_at',
             'user',
             'special_link',
+            'file',
         ]
         read_only_fields = [
             'id',

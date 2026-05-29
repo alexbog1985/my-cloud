@@ -33,6 +33,19 @@ class FileViewSet(viewsets.ModelViewSet):
         instance.file.delete(save=False)
         instance.delete()
 
+    @action(detail=True, methods=['get'], url_path='download')
+    def download(self, request, pk=None):
+        file_obj = self.get_object()  # использует get_queryset и разрешения
+
+        try:
+            file_obj.file.open('rb')
+        except Exception:
+            raise Http404('Файла не существует')
+
+        response = HttpResponse(file_obj.file, content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+        return response
+
 
 class FileDownloadByLinkView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -49,3 +62,5 @@ class FileDownloadByLinkView(APIView):
 
         response = HttpResponse(file_obj.file, content_type='application/octet-stream')
         response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+
+        return response
