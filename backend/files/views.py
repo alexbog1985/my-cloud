@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from django.utils.encoding import escape_uri_path
 
 from .models import File
-from .serializers import FileSerializer
+from .serializers import FileSerializer, PublicFileSerializer
 from .permissions import IsOwnerOrAdmin
 
 
@@ -37,6 +37,10 @@ class FileViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         file_obj = self.get_object()  # использует get_queryset и разрешения
 
+        if request.query_params.get('info') == 'true':
+            serializer = FileSerializer(file_obj)
+            return Response(serializer.data)
+
         try:
             file_obj.file.open('rb')
         except Exception:
@@ -52,6 +56,11 @@ class FileDownloadByLinkView(APIView):
 
     def get(self, request, special_link):
         file_obj = get_object_or_404(File, special_link=special_link)
+
+        if request.query_params.get('info') == 'true':
+            serializer = PublicFileSerializer(file_obj)
+            return Response(serializer.data)
+
         file_obj.last_download_at = timezone.now()
         file_obj.save()
 

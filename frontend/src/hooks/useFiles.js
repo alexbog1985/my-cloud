@@ -19,6 +19,28 @@ export const useFiles = () => {
   const dispatch = useDispatch();
   const { request } = useApi();
 
+  const downloadFileContent = useCallback(async (url, fileName) => {
+    try {
+      const response = await request({
+        url,
+        method: 'GET',
+        responseType: "blob",
+      });
+
+      const urlBlob = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = urlBlob;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(urlBlob);
+    } catch (error) {
+      console.error('Ошибка скачивания файла', error);
+      throw error;
+    }
+  }, [request]);
+
   const fetchFiles = useCallback(async () => {
     dispatch(setLoading());
     try {
@@ -102,36 +124,17 @@ export const useFiles = () => {
   }, [dispatch, request]);
 
   const downloadFile = useCallback(async (fileId) => {
-
-    const fileResponse = await request({
-      url: `/files/${fileId}/`,
-      method: 'GET',
-    })
-
-    const fileName = fileResponse.data.original_name || 'file';
-
     try {
-      const response = await request({
-        url: `/files/${fileId}/download/`,
+      const fileResponse = await request({
+        url: `/files/${fileId}/`,
         method: 'GET',
-        responseType: 'blob',
-      })
-      console.log(response.headers)
+      });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadFileContent(`/files/${fileId}/download`, fileResponse.data.original_name);
     } catch (error) {
-      console.error('Ошибка скачивания файла', error);
-      dispatch(setErrors({ download: error.response?.data || 'Ошибка скачивания файла' }));
-      throw error;
+      dispatch(setErrors({ download: error.response?.data } || 'Ошибка скачивания файла'));
     }
-  }, [dispatch, request]);
+  }, [dispatch, request, downloadFileContent]);
 
   const copySpecialLink = useCallback(async (fileId) => {
     try {
@@ -141,7 +144,7 @@ export const useFiles = () => {
       });
 
       if (response.data.special_link) {
-        const link = `$window.location.origin/s/${response.data.special_link}/`;
+        const link = `${window.location.origin}/s/${response.data.special_link}/`;
         await navigator.clipboard.writeText(link);
         return link;
       }
@@ -151,6 +154,23 @@ export const useFiles = () => {
     }
   }, [dispatch, request]);
 
+  const downloadByLink = useCallback(async (specialLink) => {
+    try {
+      const fileResponse = await request({
+        url: `/s/${specialLink}/`,
+        method: 'GET',
+        params: { info: true }
+      });
+
+      const fileName = fileResponse.data.original_name;
+      console.log(fileResponse.data);
+
+      await downloadFileContent(`/s/${specialLink}`, fileName);
+    } catch (error) {
+      console.error('Ошибка скачивания по ссылке', error);
+    }
+  }, [request, downloadFileContent]);
+
   return {
     fetchFiles,
     uploadFile,
@@ -158,6 +178,7 @@ export const useFiles = () => {
     deleteFile,
     downloadFile,
     copySpecialLink,
+    downloadByLink,
   };
 };
 

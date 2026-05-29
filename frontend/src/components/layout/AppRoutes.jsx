@@ -7,11 +7,13 @@ import PublicRoute from "../auth/PublicRoute.jsx";
 import ProtectedRoute from "../auth/ProtectedRoute.jsx";
 import AdminRoute from "../admin/AdminRoute.jsx";
 import AdminPage from "../../pages/AdminPage.jsx";
+import FileDownloadPage from "../../pages/FileDownloadPage.jsx";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/s/:specialLink" element={<FileDownloadPage />} />
       <Route path="register/" element={
         <PublicRoute>
           <RegisterPage />

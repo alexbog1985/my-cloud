@@ -21,3 +21,14 @@ class FileSerializer(serializers.ModelSerializer):
             'user',
             'special_link',
         ]
+
+class PublicFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = File
+        fields = (
+            'original_name',
+            'comment',
+            'size',
+            'special_link',
+        )
+        read_only_fields = fields
