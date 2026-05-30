@@ -11,16 +11,10 @@ export default function FileUpload({ onUploadSuccess }) {
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
-  const allowedTypes = [
-    "image/jpeg", "image/png", "image/gif", "image/webp",
-    "application/pdf", "text/plain"
-  ];
-  const maxSize = 100 * 1024 * 1024;
-
   const handleFileSelect = (file) => {
-    const { valid, error } = validateFile(file);
+    const { isValid, error } = validateFile(file);
 
-    if (!valid) {
+    if (!isValid) {
       setError(error);
       return;
     }
@@ -29,13 +23,14 @@ export default function FileUpload({ onUploadSuccess }) {
     setError('');
   };
 
-  const handleRemoveFile = (file) => {
+  const handleRemoveFile = () => {
     setSelectedFile(null);
     setError('');
   }
 
   const handleUpload = async () => {
     if (!selectedFile) return;
+
     try {
       await onUploadSuccess(selectedFile, comment);
       setSelectedFile(null);

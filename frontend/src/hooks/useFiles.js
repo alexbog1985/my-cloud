@@ -93,7 +93,7 @@ export const useFiles = () => {
     try {
       const response = await request({
         url: `/files/${fileId}/`,
-        method: 'PATСH',
+        method: 'PATCH',
         data: data,
       });
       dispatch(updateFile(response.data));

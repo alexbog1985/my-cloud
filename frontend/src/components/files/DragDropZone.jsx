@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {validateFile} from "../utils/fileValidation.js";
 
-export default function DragDropZone({ onFileSelect, children, acceptTypes, maxSize }) {
+export default function DragDropZone({ onFileSelect, children }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragEnter = (e) => {
@@ -27,9 +27,9 @@ export default function DragDropZone({ onFileSelect, children, acceptTypes, maxS
     setIsDragging(false);
 
     const file = e.dataTransfer.files[0];
-    const { valid } = validateFile(file);
+    const { isValid} = validateFile(file);
 
-    if (valid) {
+    if (isValid) {
       onFileSelect(file);
     }
 

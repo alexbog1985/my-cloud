@@ -1,28 +1,44 @@
-export const allowedTypes = [
-  "image/jpeg", "image/png", "image/gif", "image/webp",
-  "application/pdf", "text/plain"
-];
+export const FILE_VALIDATION = {
+  // Разрешенные типы файлов
+  ALLOWED_TYPES: [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf', 'text/plain',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ],
+  // Максимальный размер файла (100MB)
+  MAX_SIZE: 100 * 1024 * 1024,
+  // Максимальная длина комментария
+  MAX_COMMENT_LENGTH: 1000
+};
 
-export const maxSize = 100 * 1024 * 1024;
+export const isValidFileType = (file) => {
+  return FILE_VALIDATION.ALLOWED_TYPES.includes(file.type);
+};
+
+export const isValidFileSize = (file) => {
+  return file.size <= FILE_VALIDATION.MAX_SIZE;
+};
 
 export const validateFile = (file) => {
   if (!file) {
-    return { valid: false, error: 'Файл не выбран' };
+    return { isValid: false, error: 'Файл не выбран' };
   }
 
-  if (!allowedTypes.includes(file.type)) {
+  if (!isValidFileType(file)) {
     return {
-      valid: false,
-      error: 'Недопустимый тип файла. Разрешены: JPG, PNG, GIF, PDF, TXT'
+      isValid: false,
+      error: `Недопустимый тип файла. Разрешены: ${FILE_VALIDATION.ALLOWED_TYPES.join(', ')}`
     };
   }
 
-  if (file.size > maxSize) {
+  if (!isValidFileSize(file)) {
+    const maxSizeMB = FILE_VALIDATION.MAX_SIZE / (1024 * 1024);
     return {
-      valid: false,
-      error: 'Файл слишком большой.'
-    }
-  };
+      isValid: false,
+      error: `Файл слишком большой. Максимальный размер: ${maxSizeMB}MB`
+    };
+  }
 
-  return { valid: true };
+  return { isValid: true, error: null };
 };
