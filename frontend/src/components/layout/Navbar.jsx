@@ -5,7 +5,7 @@ import LoadingIndicator from "../ui/LoadingIndicator.jsx";
 import AdminNavItem from "./AdminNavItem.jsx";
 
 export default function Navbar() {
-  const loading = useSelector(state => state.auth.loading);
+  const { loading, isAuthenticated }  = useSelector(state => state.auth);
 
   if (loading) {
     return (
@@ -43,6 +43,11 @@ export default function Navbar() {
             <li className="nav-item">
               <Link to="/" className="nav-link active">Главная</Link>
             </li>
+            {isAuthenticated && (
+              <li className="nav-item">
+                <Link to="/files" className="nav-link">Файлы</Link>
+              </li>
+            )}
             <AdminNavItem />
           </ul>
 
