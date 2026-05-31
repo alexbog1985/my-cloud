@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setLoading, setErrors, setUser, setToken, clearErrors } from "../store/slices/authSlice.js";
-import { formatApiError } from "../components/utils/formatApiError.js";
-import { validateForm } from "../components/utils/authValidators.js";
+import { formatApiError } from "../utils/formatApiError.js";
+import { validateForm } from "../utils/authValidators.js";
 import { useApi } from "./useApi.js";
 
 export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', validation = true) => {

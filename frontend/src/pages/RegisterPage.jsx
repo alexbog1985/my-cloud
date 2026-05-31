@@ -1,6 +1,5 @@
 import { useSelector } from "react-redux";
 import AuthForm from '../components/ui/AuthForm';
-import AuthFormLink from "../components/ui/AuthFormLink.jsx";
 import { useAuthForm } from "../hooks/useAuthForm.js";
 
 
@@ -33,12 +32,11 @@ export default function RegisterPage() {
             onChange={handleChange}
             onSubmit={(e) => handleSubmit(e, '/register/')}
             isLoading={isLoading}
-          />
-
-          <AuthFormLink
-            to="/login"
-            askText="Уже есть аккаунт?"
-            linkText="Войти"
+            footerLink={{
+              text: "Уже есть аккаунт?",
+              to: "/login",
+              linkText: "Войти"
+            }}
           />
         </div>
       </div>

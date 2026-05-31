@@ -1,25 +1,15 @@
-import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useFiles } from "../hooks/useFiles";
 import FileUpload from "../components/files/FileUpload";
 import FileList from "../components/files/FileList";
 import FormError from "../components/ui/FormError";
+import { useFetchOnMount } from "../hooks/useFetchOnMount.js";
 
 export default function FilesPage() {
   const { fetchFiles, uploadFile } = useFiles();
   const { files, errors, uploadProgress, isUploading } = useSelector((state) => state.files);
 
-  useEffect(() => {
-    const loadFiles = async () => {
-      try {
-        await fetchFiles();
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-      }
-    };
-
-    loadFiles().then();
-  }, []);
+  useFetchOnMount(fetchFiles);
 
   return (
     <div className="container py-4">

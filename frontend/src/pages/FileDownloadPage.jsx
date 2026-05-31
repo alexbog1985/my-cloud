@@ -7,7 +7,7 @@ export default function FileDownloadPage() {
   const { downloadByLink } = useFiles();
 
   useEffect(() => {
-    downloadByLink(specialLink);
+    downloadByLink(specialLink).then();
   }, [specialLink, downloadByLink]);
 
   return (

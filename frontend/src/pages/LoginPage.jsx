@@ -1,8 +1,6 @@
-
 import { useSelector } from "react-redux";
 import AuthForm from "../components/ui/AuthForm.jsx";
-import AuthFormLink from "../components/ui/AuthFormLink.jsx";
-import {useAuthForm} from "../hooks/useAuthForm.js";
+import { useAuthForm } from "../hooks/useAuthForm.js";
 
 const formFields = [
   { name: 'username', label: 'Логин', type: 'text' },
@@ -30,12 +28,11 @@ export default function LoginPage() {
             onChange={handleChange}
             onSubmit={(e) => handleSubmit(e, '/login/')}
             isLoading={isLoading}
-          />
-
-          <AuthFormLink
-            to="/register"
-            askText="Нет учетной записи?"
-            linkText="Создать"
+            footerLink={{
+              text: "Нет учетной записи?",
+              to: "/register",
+              linkText: "Создать"
+            }}
           />
         </div>
       </div>

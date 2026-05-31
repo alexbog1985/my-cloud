@@ -4,7 +4,7 @@ import DragDropZone from "./DragDropZone";
 import FileSelector from "./FileSelector";
 import FileInfo from "./FileInfo";
 import CommentInput from "./CommentInput";
-import { validateFile } from "../utils/fileValidation.js";
+import { validateFile } from "../../utils/fileValidation.js";
 
 export default function FileUpload({ onUploadSuccess }) {
   const [selectedFile, setSelectedFile] = useState(null);

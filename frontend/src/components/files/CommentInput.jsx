@@ -1,16 +1,7 @@
-import { useState, useEffect } from "react";
-
 export default function CommentInput({ value, onChange, placeholder = "Добавьте описание файла..."}) {
-  const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
 
   const handleChange = (e) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
+     onChange(e.target.value);
   };
 
   return (
@@ -22,7 +13,7 @@ export default function CommentInput({ value, onChange, placeholder = "Доба�
         id="comment"
         className="form-control"
         rows="2"
-        value={localValue}
+        value={value}
         onChange={handleChange}
         placeholder={placeholder}
       />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import {validateFile} from "../utils/fileValidation.js";
+import {validateFile} from "../../utils/fileValidation.js";
 
 export default function DragDropZone({ onFileSelect, children }) {
   const [isDragging, setIsDragging] = useState(false);

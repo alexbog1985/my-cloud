@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useUsers } from '../../hooks/useUsers.js'
 import UserActions from './UserActions';
+import { useFetchOnMount } from "../../hooks/useFetchOnMount.js";
 
 const columns = [
   { key: 'user', label: 'Пользователь', render: (user) => (
@@ -33,9 +33,7 @@ export default function UsersTable() {
   const { users, loading } = useSelector((state) => state.users);
   const { fetchUsers } = useUsers();
 
-  useEffect(() => {
-    fetchUsers().then();
-  }, [fetchUsers]);
+  useFetchOnMount(fetchUsers);
 
   if (loading) {
     return <div>Загрузка...</div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '../ui/Button';
 import LoadingIndicator from '../ui/LoadingIndicator';
 import { useFiles } from '../../hooks/useFiles';
-import { formatFileSize, formatDate } from "../utils/fileUtils.js";
+import { formatFileSize, formatDate } from "../../utils/fileUtils.js";
 
 export default function FileItem({ file }) {
   const { deleteFile, downloadFile, copySpecialLink } = useFiles();

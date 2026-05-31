@@ -1,19 +1,19 @@
 export default function FormError({ error }) {
   if (!error) return null;
 
-  if (typeof error === 'object' && !Array.isArray(error)) {
-    const firstErrorKey = Object.keys(error)[0];
-    if (firstErrorKey) {
-      const firstErrorValue = error[firstErrorKey];
-      const message = Array.isArray(firstErrorValue) ? firstErrorValue[0] : firstErrorValue;
-      return <div className="invalid-feedback d-block">{message}</div>;
+  let message = '';
+
+  if (typeof error === 'string') {
+    message = error;
+  } else if (Array.isArray(error)) {
+    message = error[0];
+  } else if (typeof error === 'object') {
+    const firstKey = Object.keys(error)[0];
+    if (firstKey) {
+      const firstValue = error[firstKey];
+      message = Array.isArray(firstValue) ? firstValue[0] : firstValue;
     }
-    return null;
   }
 
-  if (Array.isArray(error)) {
-    return <div className="invalid-feedback d-block">{error[0]}</div>;
-  }
-
-  return <div className="invalid-feedback d-block">{error}</div>;
+  return message ? <div className="invalid-feedback d-block">{message}</div> : null;
 }
