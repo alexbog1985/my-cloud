@@ -106,9 +106,6 @@ export const useFiles = () => {
   }, [dispatch, request]);
 
   const deleteFile = useCallback(async (fileId) => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот файл?')) {
-      return;
-    }
 
     try {
       await request({

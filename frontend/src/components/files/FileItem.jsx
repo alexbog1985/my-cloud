@@ -1,13 +1,9 @@
-import { useState } from 'react';
 import Button from '../ui/Button';
-import LoadingIndicator from '../ui/LoadingIndicator';
 import { useFiles } from '../../hooks/useFiles';
 import { formatFileSize, formatDate } from "../../utils/fileUtils.js";
 
-export default function FileItem({ file }) {
-  const { deleteFile, downloadFile, copySpecialLink } = useFiles();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isCopyingLink, setIsCopyingLink] = useState(false);
+export default function FileItem({ file, onDelete, onCopyLink }) {
+  const { downloadFile } = useFiles();
 
   const handleDownload = async () => {
     try {
@@ -17,37 +13,12 @@ export default function FileItem({ file }) {
     }
   };
 
-  const handleCopyLink = async () => {
-    setIsCopyingLink(true);
-    try {
-      await copySpecialLink(file.id);
-      console.log('Ссылка скопирована');
-    } catch (error) {
-      console.log('Ошибка копирования ссылки:', error);
-    } finally {
-      setIsCopyingLink(false);
-    }
-  }
-
-  const handleDelete= async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот файл?')) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      await deleteFile(file.id);
-    } catch (error) {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <tr>
-      <td>
+      <td className="text-truncate" style={{ maxWidth: '200px' }}>
         <div className="fw-medium">{file.original_name}</div>
       </td>
-      <td>
+      <td className="text-truncate" style={{ maxWidth: '150px' }}>
         <div className="text-muted small">
           {file.comment || <em>Без комментария</em>}
         </div>
@@ -69,31 +40,21 @@ export default function FileItem({ file }) {
           <Button
             variant="outline-secondary"
             size="sm"
-            onClick={handleCopyLink}
-            disabled={isCopyingLink}
+            onClick={() => onCopyLink(file.id)}
             title="Скопировать специальную ссылку"
             extendClass="flex-shrink-0"
           >
-            {isCopyingLink ? (
-              <LoadingIndicator size="sm" text="" />
-            ) : (
-              'Ссылка'
-            )}
+            Ссылка
           </Button>
 
           <Button
             variant="outline-danger"
             size="sm"
-            onClick={handleDelete}
-            disabled={isDeleting}
+            onClick={() => onDelete(file)}
             title="Удалить файл"
             extendClass="flex-shrink-0"
           >
-            {isDeleting ? (
-              <LoadingIndicator size="sm" text="" />
-            ) : (
-              'Удалить'
-            )}
+            Удалить
           </Button>
         </div>
       </td>

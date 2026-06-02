@@ -1,17 +1,27 @@
-import { useSelector } from "react-redux";
+import {useState} from "react";
+import {useSelector} from "react-redux";
 import FileItem from "./FileItem";
 import LoadingIndicator from "../ui/LoadingIndicator.jsx";
+import useFiles from "../../hooks/useFiles.js";
+import DeleteFileModal from "./DeleteFileModal.jsx";
+import LinkModal from "./LinkModal.jsx";
 
 const columns = [
-  { key: 'name', label: 'Имя файла', sortable: true },
-  { key: 'comment', label: 'Комментарий' },
-  { key: 'size', label: 'Размер', sortable: true },
-  { key: 'uploaded_at', label: 'Загружен', sortable: true },
-  { key: 'actions', label: 'Действия' }
+  {key: 'name', label: 'Имя файла', sortable: true},
+  {key: 'comment', label: 'Комментарий'},
+  {key: 'size', label: 'Размер', sortable: true},
+  {key: 'uploaded_at', label: 'Загружен', sortable: true},
+  {key: 'actions', label: 'Действия'}
 ];
 
 export default function FileList() {
   const { files, loading } = useSelector((state) => state.files);
+  const { deleteFile, copySpecialLink } = useFiles();
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [fileForLink, setFileForLink] = useState(null);
 
   if (loading) {
     return (
@@ -32,10 +42,38 @@ export default function FileList() {
     )
   }
 
+  const handleDeleteClick = (file) => {
+    setFileToDelete(file);
+    setShowDeleteConfirm(true);
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!fileToDelete) return;
+
+    try {
+      await deleteFile(fileToDelete.id);
+      setShowDeleteConfirm(false);
+      setFileToDelete(null);
+    } catch (error) {
+      console.error('Ошибка удаления файла:', error);
+    }
+  }
+
+  const handleCopyLink = async (fileId) => {
+    try {
+      const link = await copySpecialLink(fileId);
+      setFileForLink(link);
+      setShowLinkModal(true);
+    } catch (error) {
+      console.log('Ошибка копирования ссылки:', error);
+    }
+  };
+
   return (
-    <div className="table-responsive">
-      <table className="table table-striped table-hover align-middle">
-        <thead className="table-light">
+    <>
+      <div className="table-responsive">
+        <table className="table table-striped table-hover align-middle">
+          <thead className="table-light">
           <tr>
             {columns.map((column) => (
               <th key={column.key} scope="col">
@@ -48,13 +86,32 @@ export default function FileList() {
               </th>
             ))}
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {files.map((file) => (
-            <FileItem key={file.id} file={file} />
+            <FileItem
+              key={file.id}
+              file={file}
+              onDelete={handleDeleteClick}
+              onCopyLink={handleCopyLink}
+            />
           ))}
-        </tbody>
-      </table>
-    </div>
-  )
+          </tbody>
+        </table>
+      </div>
+
+      <DeleteFileModal
+        show={showDeleteConfirm}
+        file={fileToDelete}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <LinkModal
+        show={showLinkModal}
+        link={fileForLink}
+        onClose={() => setShowLinkModal(false)}
+      />
+    </>
+  );
 }
