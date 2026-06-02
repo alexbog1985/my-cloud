@@ -2,7 +2,7 @@ import Button from '../ui/Button';
 import { useFiles } from '../../hooks/useFiles';
 import { formatFileSize, formatDate } from "../../utils/fileUtils.js";
 
-export default function FileItem({ file, onDelete, onCopyLink }) {
+export default function FileItem({ file, onDelete, onCopyLink, onRename }) {
   const { downloadFile } = useFiles();
 
   const handleDownload = async () => {
@@ -45,6 +45,16 @@ export default function FileItem({ file, onDelete, onCopyLink }) {
             extendClass="flex-shrink-0"
           >
             Ссылка
+          </Button>
+
+          <Button
+            variant="outline-info"
+            size="sm"
+            onClick={() => onRename(file)}
+            title="Редактировать файл"
+            extendClass="flex-shrink-0"
+          >
+            Редактировать
           </Button>
 
           <Button

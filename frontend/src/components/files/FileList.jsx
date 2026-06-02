@@ -1,10 +1,12 @@
 import {useState} from "react";
 import {useSelector} from "react-redux";
 import FileItem from "./FileItem";
-import LoadingIndicator from "../ui/LoadingIndicator.jsx";
-import useFiles from "../../hooks/useFiles.js";
-import DeleteFileModal from "./DeleteFileModal.jsx";
-import LinkModal from "./LinkModal.jsx";
+import LoadingIndicator from "../ui/LoadingIndicator";
+import useFiles from "../../hooks/useFiles";
+import DeleteFileModal from "./DeleteFileModal";
+import LinkModal from "./LinkModal";
+import useRenameFile from "../../hooks/useRenameFile";
+import RenameModal from "./RenameModal.jsx";
 
 const columns = [
   {key: 'name', label: 'Имя файла', sortable: true},
@@ -17,11 +19,14 @@ const columns = [
 export default function FileList() {
   const { files, loading } = useSelector((state) => state.files);
   const { deleteFile, copySpecialLink } = useFiles();
+  const { renameFile } = useRenameFile();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [fileForLink, setFileForLink] = useState(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [fileToRename, setFileToRename] = useState(null);
 
   if (loading) {
     return (
@@ -69,6 +74,21 @@ export default function FileList() {
     }
   };
 
+  const handleRenameClick = (file) => {
+    setFileToRename(file);
+    setShowRenameModal(true);
+  }
+
+  const handleRename = async (fileId, data) => {
+    try {
+      await renameFile(fileId, data);
+      setShowRenameModal(false);
+      setFileToRename(null);
+    } catch (error) {
+      console.error('Ошибка переименования:', error);
+    }
+  }
+
   return (
     <>
       <div className="table-responsive">
@@ -94,6 +114,7 @@ export default function FileList() {
               file={file}
               onDelete={handleDeleteClick}
               onCopyLink={handleCopyLink}
+              onRename={handleRenameClick}
             />
           ))}
           </tbody>
@@ -111,6 +132,13 @@ export default function FileList() {
         show={showLinkModal}
         link={fileForLink}
         onClose={() => setShowLinkModal(false)}
+      />
+
+      <RenameModal
+        show={showRenameModal}
+        file={fileToRename}
+        onRename={handleRename}
+        onClose={() => setShowRenameModal(false)}
       />
     </>
   );
