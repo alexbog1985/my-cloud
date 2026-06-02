@@ -34,9 +34,6 @@ export const useUsers = () => {
   }, [dispatch, request])
 
   const deleteUser = useCallback(async (userId) => {
-    if (!window.confirm('Вы уверены, что хотите удалить этого пользователя')) {
-      return;
-    }
     try {
       await request({ url: `/users/${userId}/delete/`, method: 'DELETE' });
       dispatch(removeUser(userId));
