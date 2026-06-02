@@ -39,6 +39,12 @@ class File(models.Model):
         auto_now_add=True,
         help_text='Дата и время загрузки',
     )
+    last_download_at = models.DateTimeField(
+        'Дата последнего скачивания',
+        null=True,
+        blank=True,
+        help_text='Дата и время последнего скачивания файла'
+    )
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

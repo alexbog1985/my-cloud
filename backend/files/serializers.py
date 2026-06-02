@@ -12,6 +12,7 @@ class FileSerializer(serializers.ModelSerializer):
             'upload_at',
             'user',
             'special_link',
+            'last_download_at',
             'file',
         ]
         read_only_fields = [
@@ -20,6 +21,7 @@ class FileSerializer(serializers.ModelSerializer):
             'upload_at',
             'user',
             'special_link',
+            'last_download_at',
         ]
 
 class PublicFileSerializer(serializers.ModelSerializer):

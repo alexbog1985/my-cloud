@@ -41,6 +41,9 @@ class FileViewSet(viewsets.ModelViewSet):
             serializer = FileSerializer(file_obj)
             return Response(serializer.data)
 
+        file_obj.last_download_at = timezone.now()
+        file_obj.save()
+
         try:
             file_obj.file.open('rb')
         except Exception:
