@@ -13,6 +13,7 @@ const columns = [
   {key: 'comment', label: 'Комментарий'},
   {key: 'size', label: 'Размер', sortable: true},
   {key: 'uploaded_at', label: 'Загружен', sortable: true},
+  {key: 'last_download_at', label: 'Скачан', sortable: true},
   {key: 'actions', label: 'Действия'}
 ];
 

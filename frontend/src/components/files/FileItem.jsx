@@ -26,6 +26,13 @@ export default function FileItem({ file, onDelete, onCopyLink, onRename }) {
       <td>{formatFileSize(file.size)}</td>
       <td>{formatDate(file.upload_at)}</td>
       <td>
+        {file.last_download_at && (
+          <div className="text-muted small">
+            {formatDate(file.last_download_at)}
+          </div>
+        )}
+      </td>
+      <td>
         <div className="d-flex gap-2">
           <Button
             variant="outline-primary"
