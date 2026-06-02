@@ -1,3 +1,4 @@
+import { Outlet } from "react-router-dom";
 import UsersTable from "../components/admin/UsersTable.jsx";
 
 export default function AdminPage() {
@@ -5,6 +6,7 @@ export default function AdminPage() {
     <div>
       <h1>Администрирование пользователей</h1>
       <UsersTable />
+      <Outlet />
     </div>
   )
 }

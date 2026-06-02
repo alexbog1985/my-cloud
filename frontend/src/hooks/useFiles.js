@@ -41,11 +41,12 @@ export const useFiles = () => {
     }
   }, [request]);
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = useCallback(async (userId) => {
     dispatch(setLoading());
     try {
+      const url = userId ? `/files/?user=${userId}` : '/files/';
       const response = await request({
-        url: '/files/',
+        url,
         method: 'GET',
       });
       dispatch(setFiles(response.data));
