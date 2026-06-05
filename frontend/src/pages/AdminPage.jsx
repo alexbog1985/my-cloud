@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
-import UsersTable from "../components/admin/UsersTable.jsx";
-import {useSelector} from "react-redux";
+import UsersTable from "../components/admin/UsersTable";
 
 export default function AdminPage() {
 

@@ -7,7 +7,7 @@ import DeleteFileModal from "./DeleteFileModal";
 import LinkModal from "./LinkModal";
 import useRenameFile from "../../hooks/useRenameFile";
 import RenameModal from "./RenameModal";
-import { useNotifications } from "../../hooks/useNotifications";
+import { useNotifications } from "../../hooks/useNotifications.jsx";
 
 const columns = [
   {key: 'name', label: 'Имя файла', sortable: true},

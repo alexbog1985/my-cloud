@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
-import AuthForm from "../components/ui/AuthForm.jsx";
-import { useAuthForm } from "../hooks/useAuthForm.js";
+import AuthForm from "../components/ui/AuthForm";
+import { useAuthForm } from "../hooks/useAuthForm";
 
 const formFields = [
   { name: 'username', label: 'Логин', type: 'text' },

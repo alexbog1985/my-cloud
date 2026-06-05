@@ -1,6 +1,6 @@
 import { useDispatch} from "react-redux";
-import { setLoading, setUser, resetLoading } from "../store/slices/authSlice.js";
-import { useApi } from "./useApi.js";
+import { setLoading, setUser, resetLoading } from "../store/slices/authSlice";
+import { useApi } from "./useApi";
 import { useCallback } from "react";
 import { useNotifications } from './useNotifications';
 

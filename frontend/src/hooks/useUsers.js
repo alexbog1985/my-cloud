@@ -7,7 +7,7 @@ import {
   setUsers,
   updateUser,
   removeUser,
-} from "../store/slices/usersSlice.js";
+} from "../store/slices/usersSlice";
 
 export const useUsers = () => {
   const dispatch = useDispatch();

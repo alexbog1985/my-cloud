@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {setLoading, setUser, setToken, setErrors, clearErrors} from "../store/slices/authSlice";
 import { formatApiError } from "../utils/formatApiError";
 import { validateForm } from "../utils/authValidators";
-import { useApi } from "./useApi.js";
+import { useApi } from "./useApi";
 import { useNotifications } from "./useNotifications";
 
 export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', validation = true) => {

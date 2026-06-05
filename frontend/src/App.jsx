@@ -5,7 +5,7 @@ import Footer from "./components/layout/Footer";
 import AuthLoading from "./components/auth/AuthLoading";
 import AppRoutes from "./components/layout/AppRoutes";
 import NotificationContainer from "./components/ui/NotificationContainer";
-import { useNotifications } from "./hooks/useNotifications.js";
+import { useNotifications } from "./hooks/useNotifications.jsx";
 
 function App() {
   const { notifications, removeNotification } = useNotifications();

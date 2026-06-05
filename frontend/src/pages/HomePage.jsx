@@ -1,6 +1,6 @@
-import HeroSection from "../components/widgets/HeroSection.jsx";
-import FeaturesList from "../components/widgets/FeaturesList.jsx";
-import Button from "../components/ui/Button.jsx";
+import HeroSection from "../components/widgets/HeroSection";
+import FeaturesList from "../components/widgets/FeaturesList";
+import Button from "../components/ui/Button";
 
 export default function HomePage() {
   return (
