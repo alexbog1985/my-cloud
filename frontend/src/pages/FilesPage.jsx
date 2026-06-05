@@ -2,12 +2,11 @@ import { useSelector } from "react-redux";
 import { useFiles } from "../hooks/useFiles";
 import FileUpload from "../components/files/FileUpload";
 import FileList from "../components/files/FileList";
-import FormError from "../components/ui/FormError";
-import { useFetchOnMount } from "../hooks/useFetchOnMount.js";
+import { useFetchOnMount } from "../hooks/useFetchOnMount";
 
 export default function FilesPage() {
   const { fetchFiles, uploadFile } = useFiles();
-  const { files, errors, uploadProgress, isUploading } = useSelector((state) => state.files);
+  const { files, uploadProgress, isUploading } = useSelector((state) => state.files);
 
   useFetchOnMount(fetchFiles);
 
@@ -19,13 +18,6 @@ export default function FilesPage() {
           {files.length} {files.length === 1 ? 'файл' : files.length < 5 ? 'файла' : 'файлов'}
         </div>
       </div>
-
-      {/* Отображение ошибок */}
-      {errors && (
-        <div className="mb-4">
-          <FormError errors={errors} />
-        </div>
-      )}
 
       {/* Прогресс загрузки */}
       {isUploading && (

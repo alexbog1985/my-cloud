@@ -6,20 +6,17 @@ export default function AuthLoading({ children }) {
   const { fetchUser } = useAuth();
   const loading = useSelector(state => state.auth.loading);
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
-  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated && !loading) {
+    if (!isAuthenticated) {
       const token = localStorage.getItem("token");
       if (token) {
-        fetchUser().finally(() => setAuthChecked(true));
-      } else {
-        setAuthChecked(true);
+        fetchUser().then();
       }
     }
-  }, [isAuthenticated, loading, authChecked, fetchUser]);
+  }, [isAuthenticated, fetchUser]);
 
-  if (!authChecked || loading) {
+  if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{height: '100vh'}}>
         <div className="spinner-border text-primary" role="status">

@@ -1,12 +1,13 @@
-import {useState} from "react";
-import {useSelector} from "react-redux";
+import { useState } from "react";
+import { useSelector } from "react-redux";
 import FileItem from "./FileItem";
 import LoadingIndicator from "../ui/LoadingIndicator";
 import useFiles from "../../hooks/useFiles";
 import DeleteFileModal from "./DeleteFileModal";
 import LinkModal from "./LinkModal";
 import useRenameFile from "../../hooks/useRenameFile";
-import RenameModal from "./RenameModal.jsx";
+import RenameModal from "./RenameModal";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const columns = [
   {key: 'name', label: 'Имя файла', sortable: true},
@@ -21,6 +22,7 @@ export default function FileList() {
   const { files, loading } = useSelector((state) => state.files);
   const { deleteFile, copySpecialLink } = useFiles();
   const { renameFile } = useRenameFile();
+  const { error } = useNotifications();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fileToDelete, setFileToDelete] = useState(null);
@@ -60,8 +62,8 @@ export default function FileList() {
       await deleteFile(fileToDelete.id);
       setShowDeleteConfirm(false);
       setFileToDelete(null);
-    } catch (error) {
-      console.error('Ошибка удаления файла:', error);
+    } catch (err) {
+      error(err.response?.data?.detail || 'Ошибка удаления файла');
     }
   }
 
@@ -70,8 +72,8 @@ export default function FileList() {
       const link = await copySpecialLink(fileId);
       setFileForLink(link);
       setShowLinkModal(true);
-    } catch (error) {
-      console.log('Ошибка копирования ссылки:', error);
+    } catch (err) {
+      error(err.response?.data?.detail || 'Ошибка копирования ссылки');
     }
   };
 
@@ -85,8 +87,8 @@ export default function FileList() {
       await renameFile(fileId, data);
       setShowRenameModal(false);
       setFileToRename(null);
-    } catch (error) {
-      console.error('Ошибка переименования:', error);
+    } catch (err) {
+      error(err.response?.data?.detail || 'Ошибка переименования');
     }
   }
 

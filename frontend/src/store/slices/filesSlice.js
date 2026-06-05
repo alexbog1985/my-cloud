@@ -16,6 +16,9 @@ const fileSlice = createSlice({
       state.loading = true;
       state.errors = null;
     },
+    clearLoading: (state) => {
+      state.loading = false;
+    },
     setFiles: (state, action) => {
       state.files = action.payload;
       state.loading = false;
@@ -60,6 +63,7 @@ const fileSlice = createSlice({
 
 export const {
   setLoading,
+  clearLoading,
   setFiles,
   setErrors,
   clearErrors,

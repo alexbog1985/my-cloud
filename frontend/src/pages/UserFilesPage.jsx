@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useFiles } from "../hooks/useFiles";
 import FileList from "../components/files/FileList";
-import LoadingIndicator from "../components/ui/LoadingIndicator.jsx";
+import LoadingIndicator from "../components/ui/LoadingIndicator";
 
 export default function UserFilesPage() {
   const { userId } = useParams();

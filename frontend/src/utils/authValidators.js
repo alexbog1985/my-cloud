@@ -12,6 +12,8 @@ const messages = {
   password_match: 'Пароли не совпадают'
 };
 
+export const AUTH_FIELD_NAMES = Object.keys(messages)
+
 export const validateField = (name, value, formData = {}) => {
   if (!value.trim()) return messages.required
   if (patterns[name] && !patterns[name].test(value)) return messages[name];

@@ -1,23 +1,24 @@
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useApi } from "./useApi";
+import { useNotifications } from "./useNotifications";
 
 import {
   setLoading,
   setFiles,
-  setErrors,
   addFile,
   updateFile,
   removeFile,
   setUploading,
   setUploadProgress,
   setUploadComplete,
-  resetUpload
+  resetUpload, clearLoading
 } from "../store/slices/filesSlice.js";
 
 export const useFiles = () => {
   const dispatch = useDispatch();
   const { request } = useApi();
+  const { error, success } = useNotifications();
 
   const downloadFileContent = useCallback(async (url, fileName) => {
     try {
@@ -35,11 +36,13 @@ export const useFiles = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(urlBlob);
-    } catch (error) {
-      console.error('Ошибка скачивания файла', error);
-      throw error;
+
+      success(`Скачивание файла: "${fileName}`);
+
+    } catch (err) {
+      throw err;
     }
-  }, [request]);
+  }, [request, error, success]);
 
   const fetchFiles = useCallback(async (userId) => {
     dispatch(setLoading());
@@ -50,8 +53,8 @@ export const useFiles = () => {
         method: 'GET',
       });
       dispatch(setFiles(response.data));
-    } catch (error) {
-      dispatch(setErrors(error.response?.data || { general: 'Ошибка загрузки файлов' }));
+    } catch (err) {
+      dispatch(clearLoading());
     }
   }, [dispatch, request]);
 
@@ -81,14 +84,18 @@ export const useFiles = () => {
 
       dispatch(addFile(response.data));
       dispatch(setUploadComplete());
+
+      success(`Файл "${file.name}" успешно загружен`)
+
       return response.data;
-    } catch (error) {
-      console.error('Ошибка загрузки фала:', error);
-      dispatch(setErrors(error.response?.data || { general: 'Ошибка загрузки файла' }));
+    } catch (err) {
+      const message = err.response?.data?.detail || err.response?.data?.file?.[0] || 'Ошибка загрузки файла';
+
+      error(message)
       dispatch(resetUpload());
-      throw error;
+      throw err;
     }
-  }, [dispatch, request]);
+  }, [dispatch, request, error, success]);
 
   const updateFileData = useCallback(async (fileId, data) => {
     try {
@@ -99,12 +106,11 @@ export const useFiles = () => {
       });
       dispatch(updateFile(response.data));
       return response.data;
-    } catch (error) {
-      console.error('Ошибка обновления файла:', error);
-      dispatch(setErrors(error.response?.data || { general: 'Ошибка обновления файла'}));
-      throw error;
+    } catch (err) {
+      error('Ошибка обновления файла:', err);
+      throw err;
     }
-  }, [dispatch, request]);
+  }, [dispatch, request, error]);
 
   const deleteFile = useCallback(async (fileId) => {
 
@@ -114,10 +120,8 @@ export const useFiles = () => {
         method: 'DELETE',
       });
       dispatch(removeFile(fileId));
-      dispatch(setErrors({}));
-    } catch (error) {
-      console.error('Ошибка удаления файла:', error);
-      dispatch(setErrors({ delete: error.response?.data ||  'Ошибка удаления файла' }));
+    } catch (err) {
+      error('Ошибка удаления файла:', err);
     }
   }, [dispatch, request]);
 
@@ -128,11 +132,21 @@ export const useFiles = () => {
         method: 'GET',
       });
 
-      await downloadFileContent(`/files/${fileId}/download`, fileResponse.data.original_name);
-    } catch (error) {
-      dispatch(setErrors({ download: error.response?.data } || 'Ошибка скачивания файла'));
+      await downloadFileContent(`/files/${fileId}/download/`, fileResponse.data.original_name);
+    } catch (err) {
+      let errorMessage = 'Ошибка скачивания файла';
+      if (err.response?.data) {
+        try {
+          const text = await err.response.data.text();
+          const data = JSON.parse(text);
+          errorMessage = data.detail || data.non_field_errors?.[0] || data.error || errorMessage;
+        } catch (e) {
+          errorMessage = 'Ошибка скачивания файла';
+        }
+      }
+      error(errorMessage);
     }
-  }, [dispatch, request, downloadFileContent]);
+  }, [dispatch, request, error]);
 
   const copySpecialLink = useCallback(async (fileId) => {
     try {
@@ -146,11 +160,10 @@ export const useFiles = () => {
         await navigator.clipboard.writeText(link);
         return link;
       }
-    } catch (error) {
-      console.error("Ошибка получения ссылки:", error);
-      dispatch(setErrors({ copy: error.response?.data || 'Ошибка получения ссылки' }));
+    } catch (err) {
+      error("Ошибка получения ссылки:", err);
     }
-  }, [dispatch, request]);
+  }, [dispatch, request, error]);
 
   const downloadByLink = useCallback(async (specialLink) => {
     try {
@@ -161,13 +174,11 @@ export const useFiles = () => {
       });
 
       const fileName = fileResponse.data.original_name;
-      console.log(fileResponse.data);
 
       await downloadFileContent(`/s/${specialLink}`, fileName);
-    } catch (error) {
-      console.error('Ошибка скачивания по ссылке', error);
-    }
-  }, [request, downloadFileContent]);
+    } catch (err) {
+      error('Ошибка скачивания по ссылке: ' + (err.response?.data?.detail || ''));    }
+  }, [request, downloadFileContent, error]);
 
   return {
     fetchFiles,
