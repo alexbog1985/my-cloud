@@ -1,12 +1,14 @@
 const mockRequest = jest.fn();
 
-const api = {
-  get: mockRequest,
-  post: mockRequest,
-  put: mockRequest,
-  delete: mockRequest,
-  patch: mockRequest,
-};
+const api = jest.fn().mockImplementation((config) => {
+  return mockRequest(config);
+});
+
+api.get = mockRequest;
+api.post = mockRequest;
+api.put = mockRequest;
+api.delete = mockRequest;
+api.patch = mockRequest;
 
 api.interceptors = {
   request: {
