@@ -42,6 +42,7 @@ export const useNotifications = () => {
 
   return {
     notifications,
+    addNotificationAction,
     error,
     success,
     warning,
