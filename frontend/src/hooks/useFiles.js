@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useApi } from "./useApi";
 import { useNotifications } from "./useNotifications";
+import { useApiErrorHandler } from "./useApiErrorHandler";
 
 import {
   setLoading,
@@ -19,6 +20,7 @@ export const useFiles = () => {
   const dispatch = useDispatch();
   const { request } = useApi();
   const { error, success } = useNotifications();
+  const handleApiError = useApiErrorHandler();
 
   const downloadFileContent = useCallback(async (url, fileName) => {
     try {
@@ -42,7 +44,7 @@ export const useFiles = () => {
     } catch (err) {
       throw err;
     }
-  }, [request, error, success]);
+  }, [request, success]);
 
   const fetchFiles = useCallback(async (userId) => {
     dispatch(setLoading());
@@ -89,13 +91,12 @@ export const useFiles = () => {
 
       return response.data;
     } catch (err) {
-      const message = err.response?.data?.detail || err.response?.data?.file?.[0] || 'Ошибка загрузки файла';
+      handleApiError(err, 'Ошибка загрузки файла')
 
-      error(message)
       dispatch(resetUpload());
       throw err;
     }
-  }, [dispatch, request, error, success]);
+  }, [dispatch, request, handleApiError, success]);
 
   const updateFileData = useCallback(async (fileId, data) => {
     try {
@@ -107,10 +108,10 @@ export const useFiles = () => {
       dispatch(updateFile(response.data));
       return response.data;
     } catch (err) {
-      error('Ошибка обновления файла:', err);
+      handleApiError(err, 'Ошибка обновления файла:');
       throw err;
     }
-  }, [dispatch, request, error]);
+  }, [dispatch, request, handleApiError]);
 
   const deleteFile = useCallback(async (fileId) => {
 
@@ -121,9 +122,9 @@ export const useFiles = () => {
       });
       dispatch(removeFile(fileId));
     } catch (err) {
-      error('Ошибка удаления файла:', err);
+      handleApiError(err, 'Ошибка удаления файла:');
     }
-  }, [dispatch, request]);
+  }, [dispatch, request, handleApiError]);
 
   const downloadFile = useCallback(async (fileId) => {
     try {
@@ -161,9 +162,9 @@ export const useFiles = () => {
         return link;
       }
     } catch (err) {
-      error("Ошибка получения ссылки:", err);
+      handleApiError(err, "Ошибка получения ссылки:");
     }
-  }, [dispatch, request, error]);
+  }, [dispatch, request, handleApiError]);
 
   const downloadByLink = useCallback(async (specialLink) => {
     try {
