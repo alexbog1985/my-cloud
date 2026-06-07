@@ -1,24 +1,55 @@
-import { renderHook, waitFor } from '@testing-library/react';
+const { renderHook, waitFor } = require('@testing-library/react');
 
-// Моки для зависимостей ДО импорта useFiles
+// Импорты после моков
+const { useFiles } = require('../../src/hooks/useFiles');
+const {
+  setFiles,
+  setLoading,
+  clearLoading,
+  setUploading,
+  addFile,
+  setUploadComplete,
+  removeFile,
+  updateFile,
+  setUploadProgress,
+  resetUpload,
+} = require('../../src/store/slices/filesSlice');
+
+// Моки для зависимостей
 jest.mock('../../src/store/slices/filesSlice');
 jest.mock('../../src/hooks/useApi');
 jest.mock('../../src/hooks/useNotifications');
 jest.mock('../../src/hooks/useApiErrorHandler');
-jest.mock('react-redux', () => ({
-  useDispatch: jest.fn(),
-}));
+jest.mock('react-redux');
 
-// Импорт после моков
-import { useFiles } from '../../src/hooks/useFiles';
-import {
-  setFiles, setLoading, clearLoading,
-  setUploading, addFile, setUploadComplete, removeFile, updateFile
-} from '../../src/store/slices/filesSlice';
+const dispatchMock = jest.fn();
+const requestMock = jest.fn();
+const errorMock = jest.fn();
+const successMock = jest.fn();
 
 describe('useFiles', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Настройка моков по умолчанию
+    require('react-redux').useDispatch.mockReturnValue(dispatchMock);
+    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: requestMock });
+    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
+      error: errorMock,
+      success: successMock,
+    });
+
+    // Mock useApiErrorHandler - контекст добавляется внутри useCallback
+    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue((err) => {
+      const message = err?.response?.data?.detail || err?.message || 'Неизвестная ошибка';
+      errorMock(message);
+      return message;
+    });
+  });
+
+  afterEach(() => {
+    console.error.mockRestore();
   });
 
   test('хук должен быть определен', () => {
@@ -26,17 +57,7 @@ describe('useFiles', () => {
   });
 
   test('должен возвращать ожидаемые методы', () => {
-    // Настроить моки перед вызовом renderHook
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: jest.fn() });
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
-
     const { result } = renderHook(() => useFiles());
-
     const methods = result.current;
 
     expect(methods).toHaveProperty('fetchFiles');
@@ -46,232 +67,248 @@ describe('useFiles', () => {
     expect(methods).toHaveProperty('downloadFile');
     expect(methods).toHaveProperty('copySpecialLink');
     expect(methods).toHaveProperty('downloadByLink');
+
+    // Проверить, что все методы - функции
+    expect(typeof methods.fetchFiles).toBe('function');
+    expect(typeof methods.uploadFile).toBe('function');
+    expect(typeof methods.updateFile).toBe('function');
+    expect(typeof methods.deleteFile).toBe('function');
+    expect(typeof methods.downloadFile).toBe('function');
+    expect(typeof methods.copySpecialLink).toBe('function');
+    expect(typeof methods.downloadByLink).toBe('function');
   });
 
-  test('fetchFiles должен устанавливать loading и получать файлы', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({ data: [{ id: 1, name: 'test.txt' }] });
-    const mockDispatch = jest.fn();
+  describe('fetchFiles', () => {
+    test('должен устанавливать loading и получать файлы', async () => {
+      // Given
+      const mockFiles = [{ id: 1, name: 'test.txt' }];
+      const userId = 'user123';
+      requestMock.mockResolvedValue({ data: mockFiles });
 
-    // Настроить моки перед вызовом renderHook
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.fetchFiles(userId);
+
+      // Then
+      await waitFor(() => {
+        expect(dispatchMock).toHaveBeenCalledWith(setLoading());
+        expect(dispatchMock).toHaveBeenCalledWith(setFiles(mockFiles));
+      });
+      expect(requestMock).toHaveBeenCalledWith({
+        url: `/files/?user=${userId}`,
+        method: 'GET'
+      });
     });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
 
-    const { result } = renderHook(() => useFiles());
-    await result.current.fetchFiles('user123');
+    test('должен обрабатывать ошибки получения файлов', async () => {
+      // Given
+      const mockError = { response: { data: { detail: 'Ошибка загрузки' } } };
+      requestMock.mockRejectedValue(mockError);
 
-    await waitFor(() => {
-      expect(mockDispatch).toHaveBeenCalledWith(setLoading());
-      expect(mockDispatch).toHaveBeenCalledWith(setFiles([{ id: 1, name: 'test.txt' }]));
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.fetchFiles('user123');
+
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(setLoading());
+      expect(dispatchMock).toHaveBeenCalledWith(clearLoading());
     });
   });
 
-  test('uploadFile должен загружать файл и обновлять состояние', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({
-      data: { id: 1, name: 'test.txt', original_name: 'test.txt' }
+  describe('uploadFile', () => {
+    test('должен загружать файл и обновлять состояние', async () => {
+      // Given
+      const mockFile = new File(['content'], 'test.txt', { type: 'text/plain' });
+      const mockUploadResponse = {
+        data: { id: 1, name: 'test.txt', original_name: 'test.txt' },
+      };
+      requestMock.mockResolvedValue(mockUploadResponse);
+
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.uploadFile(mockFile);
+
+      // Then
+      await waitFor(() => {
+        expect(dispatchMock).toHaveBeenCalledWith(setUploading());
+        expect(dispatchMock).toHaveBeenCalledWith(addFile(mockUploadResponse.data));
+        expect(dispatchMock).toHaveBeenCalledWith(setUploadComplete());
+      });
+      expect(successMock).toHaveBeenCalledWith('Файл "test.txt" успешно загружен');
+
+      // Проверить, что был вызван request с FormData
+      expect(requestMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/files/',
+          method: 'POST',
+          data: expect.any(FormData),
+        })
+      );
     });
-    const mockDispatch = jest.fn();
-    const mockSuccess = jest.fn();
-
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: mockSuccess
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
-
-    const { result } = renderHook(() => useFiles());
-
-    const file = new File(['content'], 'test.txt', { type: 'text/plain' });
-    await result.current.uploadFile(file);
-
-    await waitFor(() => {
-      expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({
-        url: '/files/',
-        method: 'POST',
-        data: expect.any(FormData),
-      }));
-    });
-
-    expect(mockSuccess).toHaveBeenCalledWith('Файл "test.txt" успешно загружен');
-    expect(mockDispatch).toHaveBeenCalledWith(setUploading());
-    expect(mockDispatch).toHaveBeenCalledWith(addFile({ id: 1, name: 'test.txt', original_name: 'test.txt' }));
-    expect(mockDispatch).toHaveBeenCalledWith(setUploadComplete());
   });
 
-  test('deleteFile должен удалять файл', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({});
-    const mockDispatch = jest.fn();
+  describe('deleteFile', () => {
+    test('должен удалять файл', async () => {
+      // Given
+      const fileId = 123;
+      requestMock.mockResolvedValue({});
 
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
+      const { result } = renderHook(() => useFiles());
 
-    const { result } = renderHook(() => useFiles());
-    await result.current.deleteFile(123);
+      // When
+      await result.current.deleteFile(fileId);
 
-    await waitFor(() => {
-      expect(mockRequest).toHaveBeenCalledWith({
-        url: '/files/123/',
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(removeFile(fileId));
+      expect(requestMock).toHaveBeenCalledWith({
+        url: `/files/${fileId}/`,
         method: 'DELETE',
       });
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(removeFile(123));
+    test('должен обрабатывать ошибки удаления файла', async () => {
+      // Given
+      const fileId = 123;
+      const mockError = { response: { data: { detail: 'Нельзя удалить файл' } } };
+      requestMock.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.deleteFile(fileId);
+
+      // Then
+      expect(errorMock).toHaveBeenCalledWith('Нельзя удалить файл');
+    });
   });
 
-  test('updateFile должен обновлять данные файла', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({
-      data: { id: 1, name: 'updated.txt', comment: 'Updated comment' }
-    });
-    const mockDispatch = jest.fn();
+  describe('updateFile', () => {
+    test('должен обновлять данные файла', async () => {
+      // Given
+      const fileId = 123;
+      const updateData = { comment: 'Updated comment' };
+      const mockResponse = {
+        data: { id: 1, name: 'updated.txt', comment: 'Updated comment' },
+      };
+      requestMock.mockResolvedValue(mockResponse);
 
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
+      const { result } = renderHook(() => useFiles());
 
-    const { result } = renderHook(() => useFiles());
-    await result.current.updateFile(123, { comment: 'Updated comment' });
+      // When
+      await result.current.updateFile(fileId, updateData);
 
-    await waitFor(() => {
-      expect(mockRequest).toHaveBeenCalledWith({
-        url: '/files/123/',
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(updateFile(mockResponse.data));
+      expect(requestMock).toHaveBeenCalledWith({
+        url: `/files/${fileId}/`,
         method: 'PATCH',
-        data: { comment: 'Updated comment' },
+        data: updateData,
       });
     });
-
-    expect(mockDispatch).toHaveBeenCalledWith(updateFile({
-      id: 1,
-      name: 'updated.txt',
-      comment: 'Updated comment'
-    }));
   });
 
-  test('copySpecialLink должен копировать ссылку в буфер обмена', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({
-      data: { id: 1, name: 'test.txt', special_link: 'abc123' }
+  describe('copySpecialLink', () => {
+    beforeEach(() => {
+      // Мок navigator.clipboard
+      global.navigator.clipboard = {
+        writeText: jest.fn().mockResolvedValue(undefined),
+      };
     });
-    const mockDispatch = jest.fn();
-    const mockWriteText = jest.fn().mockResolvedValue(undefined);
 
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
+    afterEach(() => {
+      delete global.navigator.clipboard;
     });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
 
-    // Мок navigator.clipboard
-    global.navigator.clipboard = {
-      writeText: mockWriteText
-    };
+    test('должен копировать ссылку в буфер обмена', async () => {
+      // Given
+      const fileId = 123;
+      const specialLink = 'abc123';
+      const mockResponse = {
+        data: { id: 1, name: 'test.txt', special_link: specialLink },
+      };
+      requestMock.mockResolvedValue(mockResponse);
 
-    const { result } = renderHook(() => useFiles());
-    const link = await result.current.copySpecialLink(123);
+      const { result } = renderHook(() => useFiles());
 
-    await waitFor(() => {
-      expect(mockRequest).toHaveBeenCalledWith({
-        url: '/files/123/',
+      // When
+      const link = await result.current.copySpecialLink(fileId);
+
+      // Then
+      expect(link).toBe(`${window.location.origin}/s/${specialLink}/`);
+      expect(global.navigator.clipboard.writeText).toHaveBeenCalledWith(link);
+    });
+
+    test('должен возвращать undefined если нет special_link', async () => {
+      // Given
+      const fileId = 123;
+      const mockResponse = {
+        data: { id: 1, name: 'test.txt', special_link: null },
+      };
+      requestMock.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      const link = await result.current.copySpecialLink(fileId);
+
+      // Then
+      expect(link).toBeUndefined();
+    });
+
+    test('должен обрабатывать ошибки получения ссылки', async () => {
+      // Given
+      const fileId = 123;
+      const mockError = { response: { data: { detail: 'Файл не найден' } } };
+      requestMock.mockRejectedValue(mockError);
+
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.copySpecialLink(fileId);
+
+      // Then
+      expect(errorMock).toHaveBeenCalledWith('Файл не найден');
+    });
+  });
+
+  describe('downloadByLink', () => {
+    test('должен скачивать файл по специальной ссылке', async () => {
+      // Given
+      const specialLink = 'abc123';
+      const mockResponse = {
+        data: { original_name: 'test.txt' },
+      };
+      requestMock.mockResolvedValue(mockResponse);
+
+      const { result } = renderHook(() => useFiles());
+
+      // When
+      await result.current.downloadByLink(specialLink);
+
+      // Then
+      expect(requestMock).toHaveBeenCalledWith({
+        url: `/s/${specialLink}/`,
         method: 'GET',
+        params: { info: true },
       });
     });
 
-    expect(link).toBe(`${window.location.origin}/s/abc123/`);
-    expect(mockWriteText).toHaveBeenCalledWith(link);
-  });
+    test('должен обрабатывать ошибки скачивания по ссылке', async () => {
+      // Given
+      const specialLink = 'abc123';
+      const mockError = { response: { data: { detail: 'Файл не найден' } } };
+      requestMock.mockRejectedValue(mockError);
 
-  test('copySpecialLink должен возвращать undefined если нет special_link', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({
-      data: { id: 1, name: 'test.txt', special_link: null }
-    });
-    const mockDispatch = jest.fn();
+      const { result } = renderHook(() => useFiles());
 
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn(),
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
+      // When
+      await result.current.downloadByLink(specialLink);
 
-    // Мок navigator.clipboard
-    global.navigator.clipboard = {
-      writeText: jest.fn().mockResolvedValue(undefined)
-    };
-
-    const { result } = renderHook(() => useFiles());
-    const link = await result.current.copySpecialLink(123);
-
-    expect(link).toBeUndefined();
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/files/123/',
-      method: 'GET',
-    });
-  });
-
-  test('downloadByLink должен скачивать файл по специальной ссылке', async () => {
-    const mockRequest = jest.fn().mockResolvedValue({
-      data: { original_name: 'test.txt' }
-    });
-    const mockError = jest.fn();
-    const mockDownloadFileContent = jest.fn().mockResolvedValue(undefined);
-
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockError,
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
-
-    const { result } = renderHook(() => useFiles());
-
-    // Мок downloadFileContent через замыкание
-    // Это сложный тест, так как downloadFileContent — это внутренняя функция хука
-    // Для простоты просто проверим вызов API
-    await result.current.downloadByLink('abc123');
-
-    expect(mockRequest).toHaveBeenCalledWith({
-      url: '/s/abc123/',
-      method: 'GET',
-      params: { info: true },
-    });
-  });
-
-  test('downloadByLink должен обрабатывать ошибки', async () => {
-    const mockRequest = jest.fn().mockRejectedValue({
-      response: { data: { detail: 'Файл не найден' } }
-    });
-    const mockError = jest.fn();
-
-    require('../../src/hooks/useApi').useApi.mockReturnValue({ request: mockRequest });
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockError,
-      success: jest.fn()
-    });
-    require('../../src/hooks/useApiErrorHandler').useApiErrorHandler.mockReturnValue(jest.fn());
-
-    const { result } = renderHook(() => useFiles());
-    await result.current.downloadByLink('abc123');
-
-    await waitFor(() => {
-      expect(mockError).toHaveBeenCalledWith('Ошибка скачивания по ссылке: Файл не найден');
+      // Then
+      expect(errorMock).toHaveBeenCalledWith('Ошибка скачивания по ссылке: Файл не найден');
     });
   });
 });

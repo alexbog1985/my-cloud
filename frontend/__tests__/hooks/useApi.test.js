@@ -1,19 +1,28 @@
-import { renderHook, waitFor } from '@testing-library/react';
+const { renderHook, waitFor } = require('@testing-library/react');
 
-// Моки для зависимостей ДО импорта useApi
-jest.mock('../services/api');
-jest.mock('react-redux', () => ({
-  useDispatch: jest.fn(),
-}));
+// Импорты после моков
+const { useApi } = require('../../src/hooks/useApi');
+const { logout, updateToken } = require('../../src/store/slices/authSlice');
+const api = require('../../src/services/api');
 
-// Импорт после моков
-import { useApi } from '../../src/hooks/useApi';
-import { logout, updateToken } from '../../src/store/slices/authSlice';
-import api from '../../src/services/api';
+// Моки для зависимостей
+jest.mock('../../src/store/slices/authSlice');
+jest.mock('react-redux');
+jest.mock('../../src/services/api');
+
+const dispatchMock = jest.fn();
 
 describe('useApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Настройка моков по умолчанию
+    require('react-redux').useDispatch.mockReturnValue(dispatchMock);
+  });
+
+  afterEach(() => {
+    console.error.mockRestore();
   });
 
   test('хук должен быть определен', () => {
@@ -21,61 +30,152 @@ describe('useApi', () => {
   });
 
   test('должен возвращать метод request', () => {
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
-
     const { result } = renderHook(() => useApi());
-
     expect(result.current).toHaveProperty('request');
+    expect(typeof result.current.request).toBe('function');
   });
 
-  test('request должен возвращать результат API вызова', async () => {
-    const mockApi = jest.fn().mockResolvedValue({ data: { success: true } });
-    api.mockImplementation(mockApi);
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
+  describe('request', () => {
+    test('должен возвращать результат API вызова', async () => {
+      // Given
+      const mockResponse = { data: { success: true } };
+      api.mockResolvedValue(mockResponse);
 
-    const { result } = renderHook(() => useApi());
+      // When
+      const { result } = renderHook(() => useApi());
+      const response = await result.current.request({ url: '/test/', method: 'GET' });
 
-    const response = await result.current.request({ url: '/test/', method: 'GET' });
-
-    expect(response).toEqual({ data: { success: true } });
-    expect(mockApi).toHaveBeenCalledWith({ url: '/test/', method: 'GET' });
-  });
-
-  test('request должен logout если нет refresh token', async () => {
-    const mockApi = jest.fn().mockRejectedValue({
-      response: { status: 401, data: { detail: 'Unauthorized' } }
+      // Then
+      expect(response).toEqual(mockResponse);
+      expect(api).toHaveBeenCalledWith({ url: '/test/', method: 'GET' });
     });
 
-    api.mockImplementation(mockApi);
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
+    test('должен обрабатывать 401 ошибку без refresh token и вызывать logout', async () => {
+      // Given
+      const mockError = {
+        response: { status: 401, data: { detail: 'Unauthorized' } },
+      };
+      api.mockRejectedValue(mockError);
 
-    const originalLocalStorage = global.localStorage;
-    global.localStorage = {
-      getItem: jest.fn().mockReturnValue(null)
-    };
+      // Мок localStorage
+      Object.defineProperty(window, 'localStorage', {
+        value: {
+          getItem: jest.fn().mockReturnValue(null),
+        },
+        writable: true,
+      });
 
-    const { result } = renderHook(() => useApi());
+      // When
+      const { result } = renderHook(() => useApi());
 
-    await expect(result.current.request({ url: '/test/', method: 'GET' }))
-      .rejects
-      .toEqual({ response: { status: 401, data: { detail: 'Unauthorized' } } });
+      // Then
+      await expect(result.current.request({ url: '/test/', method: 'GET' }))
+        .rejects
+        .toEqual(mockError);
 
-    expect(require('react-redux').useDispatch()).toHaveBeenCalledWith(logout());
+      expect(dispatchMock).toHaveBeenCalledWith(logout());
+    });
 
-    global.localStorage = originalLocalStorage;
+    test('должен прокидывать ошибки сети', async () => {
+      // Given
+      const mockError = new Error('Network error');
+      api.mockRejectedValue(mockError);
+
+      // When
+      const { result } = renderHook(() => useApi());
+
+      // Then
+      await expect(result.current.request({ url: '/test/', method: 'GET' }))
+        .rejects
+        .toEqual(mockError);
+    });
+
+    test('должен прокидывать ошибки без response', async () => {
+      // Given
+      const mockError = { message: 'Something went wrong' };
+      api.mockRejectedValue(mockError);
+
+      // When
+      const { result } = renderHook(() => useApi());
+
+      // Then
+      await expect(result.current.request({ url: '/test/', method: 'GET' }))
+        .rejects
+        .toEqual(mockError);
+    });
   });
 
-  test('request должен прокидывать ошибки', async () => {
-    const mockError = new Error('Network error');
-    const mockApi = jest.fn().mockRejectedValue(mockError);
+  describe('refresh token flow', () => {
+    test('должен обновлять токен и повторять запрос при 401', async () => {
+      // Given
+      const mockRefreshToken = 'refresh-token';
+      const mockNewAccessToken = 'new-access-token';
 
-    api.mockImplementation(mockApi);
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
+      const originalRequest = { url: '/data/', method: 'GET' };
+      const mockResponse = { data: { success: true } };
 
-    const { result } = renderHook(() => useApi());
+      // Настройка моков
+      api.mockRejectedValueOnce({
+        response: { status: 401, data: { detail: 'Unauthorized' } },
+      });
 
-    await expect(result.current.request({ url: '/test/', method: 'GET' }))
-      .rejects
-      .toEqual(mockError);
+      api.post = jest.fn().mockResolvedValueOnce({
+        data: { access: mockNewAccessToken },
+      });
+
+      api.mockResolvedValueOnce(mockResponse);
+
+      Object.defineProperty(window, 'localStorage', {
+        value: {
+          getItem: jest.fn().mockReturnValue(mockRefreshToken),
+        },
+        writable: true,
+      });
+
+      const { result } = renderHook(() => useApi());
+
+      // When
+      const response = await result.current.request(originalRequest);
+
+      // Then
+      expect(response).toEqual(mockResponse);
+      expect(api.post).toHaveBeenCalledWith('/token/refresh/', { refresh: mockRefreshToken });
+      expect(dispatchMock).toHaveBeenCalledWith(updateToken(mockNewAccessToken));
+
+      // Проверить, что оригинальный запрос был повторен с новым токеном
+      const expectedConfigWithToken = {
+        ...originalRequest,
+        headers: { Authorization: `Bearer ${mockNewAccessToken}` },
+      };
+      expect(api).toHaveBeenCalledWith(expectedConfigWithToken);
+    });
+
+    test('д��лжен logout при ошибке обновления токена', async () => {
+      // Given
+      const mockRefreshToken = 'refresh-token';
+
+      api.mockRejectedValueOnce({
+        response: { status: 401, data: { detail: 'Unauthorized' } },
+      });
+
+      api.post = jest.fn().mockRejectedValueOnce(new Error('Invalid refresh token'));
+
+      Object.defineProperty(window, 'localStorage', {
+        value: {
+          getItem: jest.fn().mockReturnValue(mockRefreshToken),
+        },
+        writable: true,
+      });
+
+      const { result } = renderHook(() => useApi());
+
+      // When
+      await expect(result.current.request({ url: '/test/', method: 'GET' }))
+        .rejects
+        .toThrow('Invalid refresh token');
+
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(logout());
+    });
   });
 });

@@ -1,32 +1,24 @@
-import { renderHook, waitFor } from '@testing-library/react';
+const { renderHook, waitFor } = require('@testing-library/react');
 
-// Моки для зависимостей ДО импорта useNotifications
-jest.mock('../../src/store/slices/notificationsSlice', () => ({
-  addNotification: jest.fn().mockImplementation(({ id, message, type, duration } = {}) => ({
-    type: 'notifications/addNotification',
-    payload: { id, message, type, duration },
-  })),
-  removeNotification: jest.fn().mockImplementation((id) => ({
-    type: 'notifications/removeNotification',
-    payload: id,
-  })),
-  clearNotifications: jest.fn().mockImplementation(() => ({
-    type: 'notifications/clearNotifications',
-  })),
-}));
-jest.mock('react-redux', () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
+// Импорты после моков
+const { useNotifications } = require('../../src/hooks/useNotifications');
+const { addNotification, removeNotification, clearNotifications } = require('../../src/store/slices/notificationsSlice');
 
-// Импорт после моков
-import { useNotifications } from '../../src/hooks/useNotifications.jsx';
-import { addNotification, removeNotification, clearNotifications } from '../../src/store/slices/notificationsSlice';
+// Моки для зависимостей
+jest.mock('../../src/store/slices/notificationsSlice');
+jest.mock('react-redux');
+
+const dispatchMock = jest.fn();
+const notificationsState = { notifications: [] };
 
 describe('useNotifications', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+
+    // Настройка моков по умолчанию
+    require('react-redux').useDispatch.mockReturnValue(dispatchMock);
+    require('react-redux').useSelector.mockReturnValue(notificationsState);
   });
 
   afterEach(() => {
@@ -38,9 +30,6 @@ describe('useNotifications', () => {
   });
 
   test('должен возвращать ожидаемые методы', () => {
-    require('react-redux').useDispatch.mockReturnValue(jest.fn());
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
-
     const { result } = renderHook(() => useNotifications());
 
     expect(result.current).toHaveProperty('notifications');
@@ -50,130 +39,204 @@ describe('useNotifications', () => {
     expect(result.current).toHaveProperty('warning');
     expect(result.current).toHaveProperty('clear');
     expect(result.current).toHaveProperty('removeNotification');
+
+    // Проверить, что все методы - функции
+    expect(typeof result.current.addNotificationAction).toBe('function');
+    expect(typeof result.current.error).toBe('function');
+    expect(typeof result.current.success).toBe('function');
+    expect(typeof result.current.warning).toBe('function');
+    expect(typeof result.current.clear).toBe('function');
+    expect(typeof result.current.removeNotification).toBe('function');
   });
 
-  test('error должен добавлять уведомление типа error', () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
+  describe('error', () => {
+    test('должен добавлять уведомление типа error', () => {
+      // Given
+      const message = 'Тестовое сообщение';
 
-    const { result } = renderHook(() => useNotifications());
+      const { result } = renderHook(() => useNotifications());
 
-    result.current.error('Тестовое сообщение');
+      // When
+      result.current.error(message);
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: expect.any(String),
-        payload: expect.objectContaining({
-          message: 'Тестовое сообщение',
+      // Then
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message,
           type: 'error',
-        }),
-      })
-    );
+          duration: 5000,
+        })
+      );
+      expect(dispatchMock).toHaveBeenCalled();
+    });
   });
 
-  test('success должен добавлять уведомление типа success', () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
+  describe('success', () => {
+    test('должен добавлять уведомление типа success', () => {
+      // Given
+      const message = 'Тестовое сообщение';
 
-    const { result } = renderHook(() => useNotifications());
+      const { result } = renderHook(() => useNotifications());
 
-    result.current.success('Тестовое сообщение');
+      // When
+      result.current.success(message);
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: expect.any(String),
-        payload: expect.objectContaining({
-          message: 'Тестовое сообщение',
+      // Then
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message,
           type: 'success',
-        }),
-      })
-    );
-  });
-
-  test('warning должен добавлять уведомление типа warning', () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
-
-    const { result } = renderHook(() => useNotifications());
-
-    result.current.warning('Тестовое сообщение');
-
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: expect.any(String),
-        payload: expect.objectContaining({
-          message: 'Тестовое сообщение',
-          type: 'warning',
-        }),
-      })
-    );
-  });
-
-  test('addNotificationAction должен добавлять уведомление и удалять его через duration', async () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
-
-    const { result } = renderHook(() => useNotifications());
-
-    const id = result.current.addNotificationAction('Тестовое сообщение', 'error', 3000);
-
-    // Проверить, что addNotification был вызван с правильными параметрами
-    expect(addNotification).toHaveBeenCalledWith(expect.objectContaining({
-      id: expect.any(Number),
-      message: 'Тестовое сообщение',
-      type: 'error',
-      duration: 3000,
-    }));
-
-    // Проверить, что dispatch был вызван с результатом addNotification
-    expect(mockDispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'notifications/addNotification',
-        payload: expect.objectContaining({
-          id: expect.any(Number),
-          message: 'Тестовое сообщение',
-          type: 'error',
           duration: 3000,
-        }),
-      })
-    );
-
-    // Сбросить моки
-    mockDispatch.mockClear();
-
-    // Промотать таймеры
-    jest.advanceTimersByTime(3000);
-
-    // Проверить, что removeNotification был вызван с id
-    expect(removeNotification).toHaveBeenCalledWith(id);
-    expect(mockDispatch).toHaveBeenCalledWith(removeNotification(id));
+        })
+      );
+      expect(dispatchMock).toHaveBeenCalled();
+    });
   });
 
-  test('clear должен очищать уведомления', () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
+  describe('warning', () => {
+    test('должен добавлять уведомление типа warning', () => {
+      // Given
+      const message = 'Тестовое сообщение';
 
-    const { result } = renderHook(() => useNotifications());
+      const { result } = renderHook(() => useNotifications());
 
-    result.current.clear();
+      // When
+      result.current.warning(message);
 
-    expect(mockDispatch).toHaveBeenCalledWith(clearNotifications());
+      // Then
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message,
+          type: 'warning',
+          duration: 4000,
+        })
+      );
+      expect(dispatchMock).toHaveBeenCalled();
+    });
   });
 
-  test('removeNotification должен удалять уведомление по id', () => {
-    const mockDispatch = jest.fn();
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-    require('react-redux').useSelector.mockReturnValue({ notifications: [] });
+  describe('addNotificationAction', () => {
+    test('должен добавлять уведомление и удалять его через duration', () => {
+      // Given
+      const message = 'Тестовое сообщение';
+      const type = 'error';
+      const duration = 3000;
 
-    const { result } = renderHook(() => useNotifications());
+      const { result } = renderHook(() => useNotifications());
 
-    result.current.removeNotification(123);
+      // When
+      const id = result.current.addNotificationAction(message, type, duration);
 
-    expect(mockDispatch).toHaveBeenCalledWith(removeNotification(123));
+      // Then
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id,
+          message,
+          type,
+          duration,
+        })
+      );
+
+      // Проверить, что dispatch был вызван
+      expect(dispatchMock).toHaveBeenCalled();
+
+      // Проверить, что addNotification был вызван с правильными параметрами
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message,
+          type,
+          duration,
+        })
+      );
+
+      // Очистить моки для следующей проверки
+      dispatchMock.mockClear();
+
+      // Промотать таймеры
+      jest.advanceTimersByTime(duration);
+
+      // Проверить, что removeNotification был вызван с id
+      expect(removeNotification).toHaveBeenCalledWith(id);
+      expect(dispatchMock).toHaveBeenCalledWith(removeNotification(id));
+    });
+
+    test('должен возвращать id уведомления', () => {
+      // Given
+      const message = 'Тестовое сообщение';
+
+      const { result } = renderHook(() => useNotifications());
+
+      // When
+      const id = result.current.addNotificationAction(message, 'error', 5000);
+
+      // Then
+      expect(id).toBeDefined();
+      expect(typeof id).toBe('number');
+    });
+  });
+
+  describe('clear', () => {
+    test('должен очищать уведомления', () => {
+      // Given
+      const { result } = renderHook(() => useNotifications());
+
+      // When
+      result.current.clear();
+
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(clearNotifications());
+    });
+  });
+
+  describe('removeNotification', () => {
+    test('должен удалять уведомление по id', () => {
+      // Given
+      const notificationId = 123;
+      const { result } = renderHook(() => useNotifications());
+
+      // When
+      result.current.removeNotification(notificationId);
+
+      // Then
+      expect(dispatchMock).toHaveBeenCalledWith(removeNotification(notificationId));
+    });
+  });
+
+  describe('duration defaults', () => {
+    test('error должен использовать duration по умолчанию 5000', () => {
+      const { result } = renderHook(() => useNotifications());
+
+      result.current.error('message');
+
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          duration: 5000,
+        })
+      );
+    });
+
+    test('success должен использовать duration по умолчанию 3000', () => {
+      const { result } = renderHook(() => useNotifications());
+
+      result.current.success('message');
+
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          duration: 3000,
+        })
+      );
+    });
+
+    test('warning должен использовать duration по умолчанию 4000', () => {
+      const { result } = renderHook(() => useNotifications());
+
+      result.current.warning('message');
+
+      expect(addNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          duration: 4000,
+        })
+      );
+    });
   });
 });

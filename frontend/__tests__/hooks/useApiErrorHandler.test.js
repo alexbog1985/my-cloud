@@ -1,11 +1,14 @@
-import { renderHook } from '@testing-library/react';
+const { renderHook } = require('@testing-library/react');
 
-// Моки для зависимостей ДО импорта useApiErrorHandler
+// Импорты после моков
+const { useApiErrorHandler } = require('../../src/hooks/useApiErrorHandler');
+const { useNotifications } = require('../../src/hooks/useNotifications');
+
+// Моки для зависимостей
 jest.mock('../../src/hooks/useNotifications');
 
-// Импорт после моков
-import { useApiErrorHandler } from '../../src/hooks/useApiErrorHandler';
-import { useNotifications } from '../../src/hooks/useNotifications';
+const mockErrorFn = jest.fn();
+const mockSuccessFn = jest.fn();
 
 describe('useApiErrorHandler', () => {
   beforeEach(() => {
@@ -22,132 +25,166 @@ describe('useApiErrorHandler', () => {
   });
 
   test('должен возвращать функцию errorHandler', () => {
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: jest.fn()
-    });
+    useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
     const { result } = renderHook(() => useApiErrorHandler());
 
     expect(typeof result.current).toBe('function');
   });
 
-  test('errorHandler должен возвращать сообщение из err.response.data.detail', () => {
-    const mockError = {
-      response: {
-        data: {
-          detail: 'Пользователь не найден'
-        }
-      }
-    };
-    const mockErrorFn = jest.fn();
+  describe('errorHandler', () => {
+    test('должен возвращать сообщение из err.response.data.detail', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      const mockError = {
+        response: { data: { detail: 'Пользователь не найден' } },
+      };
+
+      const { result } = renderHook(() => useApiErrorHandler());
+
+      // When
+      const message = result.current(mockError);
+
+      // Then
+      expect(message).toBe('Пользователь не найден');
+      expect(mockErrorFn).toHaveBeenCalledWith('Пользователь не найден');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler());
+    test('должен использовать err.response.data.error если нет detail', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = {
+        response: { data: { error: 'Ошибка сервера' } },
+      };
 
-    expect(message).toBe('Пользователь не найден');
-    expect(mockErrorFn).toHaveBeenCalledWith('Пользователь не найден');
-  });
+      const { result } = renderHook(() => useApiErrorHandler());
 
-  test('errorHandler должен использовать err.response.data.error если нет detail', () => {
-    const mockError = {
-      response: {
-        data: {
-          error: 'Ошибка сервера'
-        }
-      }
-    };
-    const mockErrorFn = jest.fn();
+      // When
+      const message = result.current(mockError);
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      // Then
+      expect(message).toBe('Ошибка сервера');
+      expect(mockErrorFn).toHaveBeenCalledWith('Ошибка сервера');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler());
+    test('должен использовать err.response.data.file[0] если нет detail и error', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = {
+        response: { data: { file: ['Файл не указан'] } },
+      };
 
-    expect(message).toBe('Ошибка сервера');
-    expect(mockErrorFn).toHaveBeenCalledWith('Ошибка сервера');
-  });
+      const { result } = renderHook(() => useApiErrorHandler());
 
-  test('errorHandler должен использовать err.response.data.file[0] если нет detail и error', () => {
-    const mockError = {
-      response: {
-        data: {
-          file: ['Файл не указан']
-        }
-      }
-    };
-    const mockErrorFn = jest.fn();
+      // When
+      const message = result.current(mockError);
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      // Then
+      expect(message).toBe('Файл не указан');
+      expect(mockErrorFn).toHaveBeenCalledWith('Файл не указан');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler());
+    test('должен использовать err.message если нет response.data', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = new Error('Network error');
 
-    expect(message).toBe('Файл не указан');
-    expect(mockErrorFn).toHaveBeenCalledWith('Файл не указан');
-  });
+      const { result } = renderHook(() => useApiErrorHandler());
 
-  test('errorHandler должен использовать err.message если нет response.data', () => {
-    const mockError = new Error('Network error');
-    const mockErrorFn = jest.fn();
+      // When
+      const message = result.current(mockError);
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      // Then
+      expect(message).toBe('Network error');
+      expect(mockErrorFn).toHaveBeenCalledWith('Network error');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler());
+    test('должен использовать defaultMessage если нет ошибки', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = {};
 
-    expect(message).toBe('Network error');
-    expect(mockErrorFn).toHaveBeenCalledWith('Network error');
-  });
+      const { result } = renderHook(() => useApiErrorHandler());
 
-  test('errorHandler должен использовать defaultMessage если нет ошибки', () => {
-    const mockError = {};
-    const mockErrorFn = jest.fn();
+      // When
+      const message = result.current(mockError);
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      // Then
+      expect(message).toBe('Неизвестная ошибка');
+      expect(mockErrorFn).toHaveBeenCalledWith('Неизвестная ошибка');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler());
+    test('должен добавлять context к сообщению', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = {
+        response: { data: { detail: 'Ошибка' } },
+      };
 
-    expect(message).toBe('Неизвестная ошибка');
-    expect(mockErrorFn).toHaveBeenCalledWith('Неизвестная ошибка');
-  });
+      const { result } = renderHook(() => useApiErrorHandler('Auth'));
 
-  test('errorHandler должен добавлять context к сообщению', () => {
-    const mockError = {
-      response: {
-        data: {
-          detail: 'Ошибка'
-        }
-      }
-    };
-    const mockErrorFn = jest.fn();
+      // When
+      const message = result.current(mockError);
 
-    require('../../src/hooks/useNotifications').useNotifications.mockReturnValue({
-      error: mockErrorFn
+      // Then
+      expect(message).toBe('Ошибка');
+      expect(mockErrorFn).toHaveBeenCalledWith('Auth: Ошибка');
     });
 
-    const { result } = renderHook(() => useApiErrorHandler('Auth'));
+    test('должен использовать file array для сообщения', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
 
-    const message = result.current(mockError);
+      const mockError = {
+        response: { data: { file: ['Недопустимый тип файла', 'Слишком большой размер'] } },
+      };
 
-    expect(message).toBe('Ошибка');
-    expect(mockErrorFn).toHaveBeenCalledWith('Auth: Ошибка');
+      const { result } = renderHook(() => useApiErrorHandler());
+
+      // When
+      const message = result.current(mockError);
+
+      // Then
+      expect(message).toBe('Недопустимый тип файла');
+      expect(mockErrorFn).toHaveBeenCalledWith('Недопустимый тип файла');
+    });
+
+    test('должен обрабатывать ошибки без response', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
+
+      const mockError = { message: 'Connection timeout' };
+
+      const { result } = renderHook(() => useApiErrorHandler());
+
+      // When
+      const message = result.current(mockError);
+
+      // Then
+      expect(message).toBe('Connection timeout');
+      expect(mockErrorFn).toHaveBeenCalledWith('Connection timeout');
+    });
+
+    test('должен обрабатывать частичные ошибки response', () => {
+      // Given
+      useNotifications.mockReturnValue({ error: mockErrorFn, success: mockSuccessFn });
+
+      const mockError = { response: { data: {} } };
+
+      const { result } = renderHook(() => useApiErrorHandler());
+
+      // When
+      const message = result.current(mockError);
+
+      // Then
+      expect(message).toBe('Неизвестная ошибка');
+      expect(mockErrorFn).toHaveBeenCalledWith('Неизвестная ошибка');
+    });
   });
 });

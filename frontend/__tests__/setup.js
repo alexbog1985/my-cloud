@@ -1,2 +1,5 @@
 // Подключаем дополнительные matchers от Testing Library
-import '@testing-library/jest-dom';
+require('@testing-library/jest-dom');
+
+// Подключаем кастомные matchers
+require('./__utils__/customMatchers.matchers');

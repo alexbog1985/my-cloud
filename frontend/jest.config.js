@@ -19,11 +19,18 @@ export default {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/setup\.(js|jsx)$',
+    '/setup\\.(js|jsx)$',
+    '/__utils__/',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
     '!src/**/*.d.ts',
     '!src/test/**',
   ],
+  // Улучшенный отчёт о покрытии
+  coverageReporters: ['text', 'html', 'lcov'],
+  // Настройки для быстрого выполнения тестов
+  maxWorkers: '50%',
+  // Включить сбор стека вызовов для ошибок
+  verbose: true,
 };
