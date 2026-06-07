@@ -11,7 +11,12 @@ export default function FormError({ error }) {
     const firstKey = Object.keys(error)[0];
     if (firstKey) {
       const firstValue = error[firstKey];
-      message = Array.isArray(firstValue) ? firstValue[0] : firstValue;
+      // Если значение - объект, рекурсивно извлекаем сообщение
+      if (typeof firstValue === 'object' && !Array.isArray(firstValue)) {
+        message = FormError({ error: firstValue });
+      } else {
+        message = Array.isArray(firstValue) ? firstValue[0] : firstValue;
+      }
     }
   }
 
