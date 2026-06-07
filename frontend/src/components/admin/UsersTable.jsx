@@ -1,7 +1,8 @@
-import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useUsers } from '../../hooks/useUsers.js'
 import UserActions from './UserActions';
+import { useFetchOnMount } from "../../hooks/useFetchOnMount.js";
+import {formatFileSize} from "../../utils/fileUtils.js";
 
 const columns = [
   { key: 'user', label: 'Пользователь', render: (user) => (
@@ -26,6 +27,12 @@ const columns = [
       {user.is_admin ? 'Да' : 'Нет'}
     </span>
   )},
+  { key: 'storage', label: 'Хранилище', render: (user) => (
+      <div className="text-muted small">
+        <div>Файлов: {user.file_count || 0}</div>
+        <div>Размер: {formatFileSize(user.storage_size || 0)}</div>
+      </div>
+    )},
   { key: 'actions', label: 'Действия', render: (user) => <UserActions user={user} /> }
 ];
 
@@ -33,9 +40,7 @@ export default function UsersTable() {
   const { users, loading } = useSelector((state) => state.users);
   const { fetchUsers } = useUsers();
 
-  useEffect(() => {
-    fetchUsers().then();
-  }, [fetchUsers]);
+  useFetchOnMount(fetchUsers);
 
   if (loading) {
     return <div>Загрузка...</div>

@@ -38,6 +38,7 @@ db.sqlite3
 *.swo
 *~
 .gigacode
+.gigaide
 
 # === Node.js / React / Frontend ===
 node_modules/
@@ -49,6 +50,7 @@ yarn-debug.log
 .yarn
 
 # Build outputs
+/frontend/coverage/
 /build/
 /dist/
 /out/
@@ -83,3 +85,4 @@ Thumbs.db
 
 # === Local development files ===
 .dockerignore
+

@@ -1,24 +1,10 @@
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AuthButtons from "./AuthButtons.jsx";
-import LoadingIndicator from "../ui/LoadingIndicator.jsx";
 import AdminNavItem from "./AdminNavItem.jsx";
 
 export default function Navbar() {
-  const loading = useSelector(state => state.auth.loading);
-
-  if (loading) {
-    return (
-      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div className="container">
-          <span className="navbar-brand d-flex align-items-center">
-            <strong>My Cloud</strong>
-          </span>
-          <LoadingIndicator size="sm" />
-        </div>
-      </nav>
-    );
-  }
+  const { isAuthenticated }  = useSelector(state => state.auth);
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
@@ -43,6 +29,11 @@ export default function Navbar() {
             <li className="nav-item">
               <Link to="/" className="nav-link active">Главная</Link>
             </li>
+            {isAuthenticated && (
+              <li className="nav-item">
+                <Link to="/files" className="nav-link">Файлы</Link>
+              </li>
+            )}
             <AdminNavItem />
           </ul>
 

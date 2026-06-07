@@ -7,10 +7,8 @@ export default function AdminNavItem() {
   if (!user || !user.is_admin) return null;
 
   return (
-    <ul className="navbar-nav">
       <li className="nav-item">
         <Link to="/admin" className="nav-link">Админка</Link>
       </li>
-    </ul>
   )
 }

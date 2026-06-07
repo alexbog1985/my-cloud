@@ -1,10 +1,13 @@
-import UsersTable from "../components/admin/UsersTable.jsx";
+import { Outlet } from "react-router-dom";
+import UsersTable from "../components/admin/UsersTable";
 
 export default function AdminPage() {
+
   return (
     <div>
       <h1>Администрирование пользователей</h1>
       <UsersTable />
+      <Outlet />
     </div>
   )
 }

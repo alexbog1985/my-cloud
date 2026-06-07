@@ -1,12 +1,13 @@
 import { useDispatch} from "react-redux";
-import { setLoading, setUser, resetLoading } from "../store/slices/authSlice.js";
-import { useApi } from "./useApi.js";
+import { setLoading, setUser, resetLoading } from "../store/slices/authSlice";
+import { useApi } from "./useApi";
 import { useCallback } from "react";
+import { useNotifications } from './useNotifications';
 
 export function useAuth() {
   const dispatch = useDispatch();
-
   const { request } = useApi()
+  const { error } = useNotifications();
 
   const fetchUser = useCallback(async () => {
     try {
@@ -16,11 +17,11 @@ export function useAuth() {
         method: 'GET',
       });
       dispatch(setUser(response.data))
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      error(err.message || 'Ошибка загрузки пользователя')
     } finally {
       dispatch(resetLoading());
     }
-  }, [dispatch, request])
+  }, [dispatch, request, error])
   return { fetchUser };
 }

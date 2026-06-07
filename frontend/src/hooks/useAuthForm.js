@@ -1,78 +1,33 @@
-import { useEffect, useState } from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { setLoading, setErrors, setUser, setToken, clearErrors } from "../store/slices/authSlice.js";
-import { formatApiError } from "../components/utils/formatApiError.js";
-import { validateForm } from "../components/utils/authValidators.js";
-import { useApi } from "./useApi.js";
+import { useAuthFormState } from './useAuthFormState';
+import { useAuthSubmit } from './useAuthSubmit';
 
 export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', validation = true) => {
-  const { request } = useApi();
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const [formData, setFormData] = useState(formFields.reduce((acc, field) => ({
-    ...acc,
-    [field.name]: ''
-  }), {}));
-
-  const errors = useSelector(state => state.auth.errors);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearErrors());
-    }
-  }, [dispatch]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    if (errors[name]) {
-      dispatch(setErrors({ ...errors, [name]: null }))
-    }
-  };
+  const { formData, handleChange, errors, validateForm: validateFormLocal } = useAuthFormState(formFields);
+  const handleSubmitRequest = useAuthSubmit(onSuccessRedirectPath);
 
   const handleSubmit = async (e, apiUrl) => {
     e.preventDefault();
 
     if (validation) {
-      const { errors: clientErrors, isValid } = validateForm(formData, formFields);
+      const { isValid } = validateFormLocal();
 
       if (!isValid) {
-        dispatch(setErrors(clientErrors));
+        // Ошибки уже установлены в useAuthFormState через dispatch
         return;
       }
     }
 
-    dispatch(setLoading());
-    dispatch(clearErrors());
-
     try {
-      const response = await request({ url: apiUrl, method: 'POST', data: formData });
-
-      if (response.data.access) {
-        dispatch(setToken(response.data.access))
-      }
-
-      if (response.data.refresh) {
-        localStorage.setItem('refreshToken', response.data.refresh);
-      }
-
-      if (response.data.user) {
-        dispatch(setUser(response.data.user));
-      }
-
-      navigate(onSuccessRedirectPath);
-
+      await handleSubmitRequest(apiUrl, formData);
     } catch (err) {
-      const apiErrors = formatApiError(err);
-      dispatch(setErrors(apiErrors.response.data));
+      // Ошибки уже обработаны в useAuthSubmit
     }
-  }
+  };
+
   return {
     formData,
     handleChange,
-    handleSubmit,
-  }
+    errors,
+    handleSubmit
+  };
 };

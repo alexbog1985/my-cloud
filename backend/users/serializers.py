@@ -1,4 +1,5 @@
 from django.contrib.auth.password_validation import validate_password
+from django.db import models
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -9,6 +10,9 @@ from .validators import validate_username
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    file_count = serializers.SerializerMethodField()
+    storage_size = serializers.SerializerMethodField()
+
 
     class Meta:
         model = User
@@ -20,11 +24,22 @@ class UserSerializer(serializers.ModelSerializer):
             'is_admin',
             'storage_path',
             'date_joined',
+            'file_count',
+            'storage_size',
         )
         read_only_fields = ('date_joined', 'storage_path')
 
     def get_full_name(self, obj):
         return obj.get_full_name()
+
+    def get_file_count(self, obj):
+        return obj.files.count()
+
+    def get_storage_size(self, obj):
+        total_size = obj.files.aggregate(
+            total_size=models.Sum('size')
+        )['total_size']
+        return total_size or 0
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
