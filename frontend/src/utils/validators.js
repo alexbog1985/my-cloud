@@ -4,7 +4,7 @@ export const AUTH_FIELD_NAMES = [
 
 export const PATTERN_USERNAME = /^[a-zA-Z][a-zA-Z0-9]{3,19}$/;
 export const PATTERN_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const PATTERN_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6}$/;
+export const PATTERN_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 
 export const MESSAGES = {
   required: 'Это поле обязательно для заполнения',
