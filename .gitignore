@@ -50,6 +50,7 @@ yarn-debug.log
 .yarn
 
 # Build outputs
+/frontend/coverage/
 /build/
 /dist/
 /out/
@@ -84,3 +85,4 @@ Thumbs.db
 
 # === Local development files ===
 .dockerignore
+
