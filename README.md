@@ -9,11 +9,11 @@ My Cloud — это веб-приложение для облачного хра
 ## Технологии
 
 ### Бэкенд
-- **Python** 3.10+
+- **Python** 3.12+
 - **Django** 6.0.5
 - **Django REST Framework** 3.17.1
 - **JWT Authentication** (rest_framework_simplejwt) 5.5.1
-- **PostgreSQL** 14+ (или SQLite для разработки)
+- **PostgreSQL** 15+ (или SQLite для разработки)
 - **python-decouple** 3.8 — управление переменными окружения
 
 ### Фронтенд
@@ -21,7 +21,7 @@ My Cloud — это веб-приложение для облачного хра
 - **Redux Toolkit** 2.11.2 — управление состоянием
 - **React Router** 7.15.0 — маршрутизация
 - **Vite** 8.0.10 — сборщик проекта
-- **Bootstrap** 5.3.8 — UI фреймворк
+- **Bootstrap** 5.3.8 — UI фрейворк
 - **Axios** 1.16.0 — HTTP клиент
 
 ## Структура проекта
@@ -35,7 +35,10 @@ my-cloud/
 │   ├── media/            # Файлы пользователей (генерируется)
 │   ├── static/           # Статические файлы (генерируется)
 │   ├── manage.py         # Управление Django проектом
-│   └── requirements.txt  # Зависимости Python
+│   ├── requirements.txt  # Зависимости Python
+│   ├── Dockerfile        # Docker конфигурация
+│   ├── docker-compose.dev.yml    # Docker для разработки
+│   └── docker-compose.prod.yml   # Docker для продакшена
 ├── frontend/             # Фронтенд на React
 │   ├── src/              # Исходный код
 │   ├── dist/             # Сборка для продакшена (генерируется)
@@ -48,9 +51,10 @@ my-cloud/
 
 ### Предварительные требования
 
-- Python 3.10+
+- Python 3.12+
 - Node.js 18+
-- PostgreSQL 14+ (или SQLite для разработки)
+- PostgreSQL 15+ (или SQLite для разработки)
+- Docker 20+ (для Docker-версии)
 - Git
 
 ### Установка и запуск (разработка)
@@ -96,7 +100,7 @@ DB_PORT=5432
 # Путь к хранилищу файлов
 MEDIA_ROOT=/absolute/path/to/my-cloud/backend/media
 
-# Для разработки можно использовать SQLite (раскомментировать в settings.py)
+# Для разработки можно использовать SQLite (по умолчанию в settings.py)
 ```
 
 #### 3. Создание базы данных и миграций
@@ -177,6 +181,87 @@ server {
     }
 }
 ```
+
+## Docker
+
+### Предварительные требования
+
+- Docker 20+
+- Docker Compose 2+
+
+### Установка и запуск (разработка)
+
+```bash
+cd backend
+docker-compose -f docker-compose.dev.yml build
+docker-compose -f docker-compose.dev.yml up
+```
+
+**Проверка:**
+- Бэкенд: `http://localhost:8000`
+- Логи: `docker-compose -f docker-compose.dev.yml logs -f`
+
+**Остановка:**
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+### Установка и запуск (продакшн)
+
+```bash
+cd backend
+docker-compose -f docker-compose.prod.yml build
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Проверка:**
+- Бэкенд: `http://localhost:8000`
+
+**Остановка:**
+```bash
+docker-compose -f docker-compose.prod.yml down
+```
+
+### Полезные команды Docker
+
+| Команда | Назначение |
+|---------|------------|
+| `docker-compose down` | Остановить контейнеры |
+| `docker-compose up --build` | Пересобрать и запустить |
+| `docker-compose logs -f` | Логи (фоллов) |
+| `docker-compose exec backend bash` | Войти в контейнер |
+| `docker-compose exec backend python manage.py migrate` | Применить миграции |
+| `docker-compose exec backend python manage.py createsuperuser` | Создать суперпользователя |
+
+### Переменные окружения
+
+Файл `.env` должен содержать:
+
+```env
+# Обязательные переменные
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# PostgreSQL
+DB_ENGINE=django.db.backends.postgresql
+DB_NAME=mycloud
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+DB_HOST=db  # Имя сервиса в docker-compose
+DB_PORT=5432
+
+# Media files
+MEDIA_ROOT=/app/media
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+**Важно:** 
+- В режиме Docker используй `DB_HOST=db` (имя сервиса PostgreSQL)
+- В режиме локальной разработки используй `DB_HOST=localhost`
+- Секреты не должны попадать в репозиторий (`.gitignore` исключает `.env`)
 
 ## API Документация
 
@@ -260,10 +345,6 @@ npm test
 ### Обязательные недоделанные функции:
 
 #### Бэкенд (не соответствует обязательным требованиям):
-- **Логирование событий сервера** — в задании указано: "все события сервера должны логироваться путём вывода на консоль сообщений «debug», «info», «warning», «error» с указанием даты и времени". В текущей реализации используется стандартный logging Django, но без настроенных обработчиков для вывода на консоль. *Это явно указано как обязательное требование в разделе "Общие требования к серверу".*
-
-#### Бэкенд (частично соответствует требованиям):
-- **PostgreSQL** — в текущей конфигурации используется SQLite для разработки. Для продакшена необходимо переключиться на PostgreSQL (указано в обязательных требованиях "Использование СУБД Postgres для хранения информации").
 - **Интеграция frontend с Django** — frontend собирается отдельно через Vite и не интегрирован с Django templates для единой точки развертывания (указано: "Загрузка статических ресурсов (HTML, CSS, JS-файлы фронтенда), а также API-вызовы обрабатываются единым сервером").
 
 ### Дополнительные функции (не обязательные):
@@ -276,7 +357,6 @@ npm test
 - **Информационная страница файла** — отсутствует отдельная страница с подробной информацией о файле. *Не указано в обязательных требованиях.*
 
 ### Инфраструктура:
-- **.env.example файл** — отсутствует шаблон .env файла для упрощения настройки. *Дополнительный файл для удобства.*
 - **Документация по развёртыванию на reg.ru** — инструкции по развертыванию на платформе reg.ru отсутствуют. *Дополнительная документация для продакшн-развёртывания.*
 
 ## Дополнительная информация
@@ -284,6 +364,7 @@ npm test
 - Документация Django: https://docs.djangoproject.com/
 - Документация React: https://react.dev/
 - Документация Vite: https://vitejs.dev/
+- Документация Docker: https://docs.docker.com/
 
 ## Лицензия
 

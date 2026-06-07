@@ -83,16 +83,12 @@ WSGI_APPLICATION = 'mycloud.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    # 'default': {
-    #     'ENGINE': env_config('DB_ENGINE'),
-    #     'NAME': env_config('DB_NAME'),
-    #     'USER': env_config('DB_USER'),
-    #     'PASSWORD': env_config('DB_PASSWORD'),
-    #     'HOST': env_config('DB_HOST'),
-    #     'PORT': env_config('DB_PORT', default='5432'),
-    # }
+        'ENGINE': env_config('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': env_config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
+        'USER': env_config('DB_USER', default=''),
+        'PASSWORD': env_config('DB_PASSWORD', default=''),
+        'HOST': env_config('DB_HOST', default=''),
+        'PORT': env_config('DB_PORT', default=''),
     }
 }
 
@@ -153,15 +149,18 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # CORS
-if DEBUG:
-    CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOWED_ORIGINS = env_config('CORS_ALLOWED_ORIGINS', default='').split(',')
+if CORS_ALLOWED_ORIGINS and CORS_ALLOWED_ORIGINS[0] != '':
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS]
+else:
+    CORS_ALLOWED_ORIGINS = []
 
 # login url
 LOGIN_REDIRECT_URL = '/login/'
