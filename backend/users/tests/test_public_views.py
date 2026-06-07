@@ -1,10 +1,11 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from files.tests.base_test import BaseTestCase
 
 User = get_user_model()
 
 
-class PublicViewsTest(TestCase):
+class PublicViewsTest(BaseTestCase):
     def test_register_view_post_valid(self):
         """Тест регистрации пользователя с валидными данными"""
         user_data = {

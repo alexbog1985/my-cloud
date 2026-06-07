@@ -1,10 +1,11 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from files.tests.base_test import BaseTestCase
 
 User = get_user_model()
 
 
-class UserModelTest(TestCase):
+class UserModelTest(BaseTestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',

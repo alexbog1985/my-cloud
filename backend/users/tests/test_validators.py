@@ -1,13 +1,14 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from files.tests.base_test import BaseTestCase
 
 from users.validators import validate_username
 
 User = get_user_model()
 
 
-class ValidatorsTest(TestCase):
+class ValidatorsTest(BaseTestCase):
     def test_validate_username_valid(self):
         """Тест валидации валидного логина"""
         valid_usernames = [

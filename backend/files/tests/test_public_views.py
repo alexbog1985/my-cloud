@@ -4,11 +4,12 @@ from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from files.models import File
+from files.tests.base_test import BaseTestCase
 
 User = get_user_model()
 
 
-class FileDownloadByLinkViewTests(APITestCase):
+class FileDownloadByLinkViewTests(BaseTestCase):
 
     def setUp(self):
         """Создание тестового пользователя и файла"""

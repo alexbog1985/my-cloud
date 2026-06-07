@@ -1,12 +1,13 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from files.tests.base_test import BaseTestCase
 
 from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
 
 User = get_user_model()
 
 
-class UserSerializerTest(TestCase):
+class UserSerializerTest(BaseTestCase):
     def setUp(self):
         self.user_data = {
             'username': 'testuser',

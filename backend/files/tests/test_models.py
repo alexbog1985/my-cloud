@@ -2,10 +2,12 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from files.models import File
+from files.tests.base_test import BaseTestCase
 
 User = get_user_model()
 
-class FileModelTest(TestCase):
+
+class FileModelTest(BaseTestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='testuser',

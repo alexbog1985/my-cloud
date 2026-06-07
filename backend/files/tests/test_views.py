@@ -5,11 +5,12 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from files.models import File
 from files.permissions import IsOwnerOrAdmin
+from files.tests.base_test import BaseTestCase
 
 User = get_user_model()
 
 
-class FileViewSetTests(APITestCase):
+class FileViewSetTests(BaseTestCase):
     """Тесты для FileViewSet - основной viewset для работы с файлами"""
 
     def setUp(self):
