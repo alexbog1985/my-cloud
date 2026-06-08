@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # === PostgreSQL Database ===
   db:
@@ -13,6 +11,19 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
+    # Healthcheck для PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Логирование (ограничение размера)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # === Django Backend (Development) ===
   backend:
@@ -21,25 +32,37 @@ services:
       dockerfile: backend/Dockerfile
       target: development
     environment:
-      - DEBUG=${DEBUG}
-      - SECRET_KEY=${SECRET_KEY}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - DB_ENGINE=${DB_ENGINE}
+      - DEBUG=${DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-me-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DB_ENGINE=${DB_ENGINE:-django.db.backends.postgresql}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
-      - DB_PORT=${DB_PORT}
-      - MEDIA_ROOT=${MEDIA_ROOT}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - DB_PORT=${DB_PORT:-5432}
+      - MEDIA_ROOT=${MEDIA_ROOT:-/app/media}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      # Отключаем байт-код для удобства разработки
+      - PYTHONDONTWRITEBYTECODE=1
+      # Отключаем буферизацию вывода для логов Docker
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./backend:/app/backend
-      - ./backend/media:/app/media
+      - backend_static:/app/static
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    # Логирование (ограничение размера)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:
+  backend_static:

@@ -36,6 +36,9 @@ my-cloud/
 │   ├── static/           # Статические файлы (генерируется)
 │   ├── manage.py         # Управление Django проектом
 │   ├── requirements.txt  # Зависимости Python
+│   ├── .env.example      # Пример конфигурации (в репозитории)
+│   ├── .env              # Реальная конфигурация (не в репозитории)
+│   ├── .dockerignore     # Исключения для Docker
 │   ├── Dockerfile        # Docker конфигурация
 │   ├── docker-compose.dev.yml    # Docker для разработки
 │   └── docker-compose.prod.yml   # Docker для продакшена
@@ -46,6 +49,10 @@ my-cloud/
 │   └── vite.config.js    # Конфигурация Vite
 └── README.md             # Документация
 ```
+
+**Примечание по безопасности:**
+- `.env` файл содержит чувствительные данные (пароли, секретные ключи) и **не должен** попадать в репозиторий
+- `.env.example` содержит примеры настроек и **должен** быть в репозитории для помощи другим разработчикам
 
 ## Быстрый старт
 
@@ -78,29 +85,80 @@ source venv/bin/activate  # Для Windows: venv\Scripts\activate
 # Установка зависимостей
 pip install -r requirements.txt
 
-# Создание .env файла
+# Создание .env файла из шаблона
 cp .env.example .env
 # Отредактируйте .env файл с настройками (см. ниже)
 ```
 
+**Примечание:** Файл `.env.example` содержит примеры всех настроек. Реальный `.env` файл исключен из репозитория (`.gitignore`) для безопасности.
+
 **Пример `.env` файла:**
 ```env
-SECRET_KEY=your-secret-key-here
+# ============================================
+# Django Security Settings
+# ============================================
+# Секретный ключ Django (используйте сильный случайный ключ в продакшене)
+# Для генерации: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+SECRET_KEY=your-secret-key-change-in-production
+
+# Режим отладки (True для разработки, False для продакшена)
 DEBUG=True
+
+# Список разрешённых хостов (через запятую)
+# Для разработки: localhost,127.0.0.1
+# Для продакшена: mycloud.example.com,www.mycloud.example.com
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# База данных (PostgreSQL)
+
+# ============================================
+# Database (PostgreSQL)
+# ============================================
+# Движок базы данных
+# Для разработки можно использовать: django.db.backends.sqlite3
 DB_ENGINE=django.db.backends.postgresql
+
+# Имя базы данных
 DB_NAME=mycloud
+
+# Пользователь базы данных
 DB_USER=postgres
+
+# Пароль базы данных
 DB_PASSWORD=yourpassword
+
+# Хост базы данных
+# Для Docker: db (имя сервиса в docker-compose)
+# Для локальной разработки: localhost
 DB_HOST=localhost
+
+# Порт базы данных
 DB_PORT=5432
 
-# Путь к хранилищу файлов
+
+# ============================================
+# Media Files (Загруженные файлы пользователей)
+# ============================================
+# Абсолютный путь к директории медиафайлов
+# Для Docker: /app/media
+# Для локальной разработки: /absolute/path/to/my-cloud/backend/media
 MEDIA_ROOT=/absolute/path/to/my-cloud/backend/media
 
-# Для разработки можно использовать SQLite (по умолчанию в settings.py)
+
+# ============================================
+# CORS (Cross-Origin Resource Sharing)
+# ============================================
+# Разрешённые источники для CORS (через запятую)
+# Для разработки: http://localhost:5173,http://127.0.0.1:5173
+# Для продакшена: https://mycloud.example.com
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+
+# ============================================
+# CSRF Trust (для продакшена)
+# ============================================
+# Разрешённые источники для CSRF защиты (через запятую)
+# Для продакшена: https://mycloud.example.com
+CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 #### 3. Создание базы данных и миграций
@@ -132,6 +190,22 @@ npm run dev
 
 Фронтенд будет доступен по адресу: `http://localhost:5173`
 
+### Проверка конфигурации разработки
+
+После установки проверьте настройки:
+
+```bash
+# Проверка .env файла
+cd backend
+cat .env
+
+# Проверка Django конфигурации
+python manage.py check
+
+# Проверка статических файлов
+python manage.py collectstatic --check
+```
+
 ### Установка и запуск (продакшн)
 
 #### 1. Сборка фронтенда
@@ -153,9 +227,11 @@ python manage.py collectstatic
 #### 3. Запуск с помощью Gunicorn (рекомендуемый вариант)
 
 ```bash
+# Установка Gunicorn (если не установлен)
 pip install gunicorn
 
 # Запуск с Gunicorn
+# Для продакшна рекомендуется использовать Docker (см. ниже)
 gunicorn mycloud.wsgi:application --bind 0.0.0.0:8000
 ```
 
@@ -189,6 +265,15 @@ server {
 - Docker 20+
 - Docker Compose 2+
 
+### Конфигурация для разработки и продакшна
+
+Проект использует два разных Docker Compose файла:
+
+| Конфигурация | Файл | Назначение |
+|-------------|------|-----------|
+| **Разработка** | `docker-compose.dev.yml` | Локальная разработка с автоматической перезагрузкой |
+| **Продакшн** | `docker-compose.prod.yml` | Оптимизированная сборка для продакшена |
+
 ### Установка и запуск (разработка)
 
 ```bash
@@ -196,6 +281,11 @@ cd backend
 docker-compose -f docker-compose.dev.yml build
 docker-compose -f docker-compose.dev.yml up
 ```
+
+**Преимущества режима разработки:**
+- Автоматическая перезагрузка кода при изменениях
+- Подробный вывод логов
+- Проброс Volume для удобной отладки
 
 **Проверка:**
 - Бэкенд: `http://localhost:8000`
@@ -214,8 +304,15 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+**Преимущества режима продакшна:**
+- Gunicorn с оптимизированными настройками
+- Ограничение ресурсов контейнеров
+- Healthcheck для мониторинга
+- Более строгие настройки безопасности
+
 **Проверка:**
 - Бэкенд: `http://localhost:8000`
+- Логи: `docker-compose -f docker-compose.prod.yml logs -f`
 
 **Остановка:**
 ```bash
@@ -235,33 +332,57 @@ docker-compose -f docker-compose.prod.yml down
 
 ### Переменные окружения
 
-Файл `.env` должен содержать:
+Файл `.env` должен содержать следующие обязательные переменные:
 
 ```env
 # Обязательные переменные
 SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+DEBUG=False
+ALLOWED_HOSTS=mycloud.example.com,www.mycloud.example.com
 
 # PostgreSQL
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=mycloud
 DB_USER=postgres
 DB_PASSWORD=yourpassword
-DB_HOST=db  # Имя сервиса в docker-compose
+DB_HOST=localhost
 DB_PORT=5432
 
 # Media files
-MEDIA_ROOT=/app/media
+MEDIA_ROOT=/absolute/path/to/my-cloud/backend/media
 
 # CORS
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOWED_ORIGINS=https://mycloud.example.com
+CSRF_TRUSTED_ORIGINS=https://mycloud.example.com
 ```
+
+**Важно:** 
+- Секреты не должны попадать в репозиторий (`.gitignore` исключает `.env`, но `.env.example` должен быть)
+- Для продакшна обязательно установите `DEBUG=False`
+- Укажите реальные доменные имена в `ALLOWED_HOSTS` и `CSRF_TRUSTED_ORIGINS`
 
 **Важно:** 
 - В режиме Docker используй `DB_HOST=db` (имя сервиса PostgreSQL)
 - В режиме локальной разработки используй `DB_HOST=localhost`
 - Секреты не должны попадать в репозиторий (`.gitignore` исключает `.env`)
+
+### Различия между режимами разработки и продакшна
+
+| Настройка | Режим разработки | Режим продакшна |
+|-----------|-----------------|----------------|
+| **DEBUG** | `True` | `False` |
+| **Сервер** | Django dev server | Gunicorn |
+| **Workers** | 1 (автоматическая перезагрузка) | 2+ (оптимизировано) |
+| **Sourcemaps** | Включены | Отключены |
+| **Логирование** | Подробное (DEBUG) | Стандартное (INFO) |
+| **CORS** | Все локальные хосты | Только продакшн домены |
+| **Безопасность** | Отключены некоторые проверки | Включены все проверки |
+
+**Рекомендации:**
+- Всегда используйте `DEBUG=False` в продакшене
+- Устанавливайте правильные значения для `ALLOWED_HOSTS` и `CSRF_TRUSTED_ORIGINS`
+- Используйте `.env.example` как шаблон для создания `.env`
+- Храните реальные `.env` файлы в `.gitignore`
 
 ## API Документация
 

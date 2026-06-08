@@ -57,9 +57,13 @@ yarn-debug.log
 /coverage/
 *.log
 
-# Environment variables
-*.env
-.env*.local
+# Environment variables (но оставляем .env.example для репозитория)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
 
 # React Dev Tools
 .DS_Store

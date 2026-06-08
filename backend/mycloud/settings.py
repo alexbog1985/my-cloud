@@ -184,11 +184,12 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
+            'stream': 'ext://sys.stderr',  # Выводить в stderr для Docker
         },
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'DEBUG',  # Уровень DEBUG для вывода всех логов
     },
     'loggers': {
         'django': {

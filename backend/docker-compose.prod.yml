@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # === PostgreSQL Database ===
   db:
@@ -10,9 +8,33 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      # Опционально: инициализация БД из бэкапа
+      # - ./backup:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     restart: unless-stopped
+    # Healthcheck для PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    # Логирование
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Ограничение ресурсов
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # === Django Backend (Production) ===
   backend:
@@ -29,16 +51,44 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=db
-      - DB_PORT=${DB_PORT}
-      - MEDIA_ROOT=${MEDIA_ROOT}
+      - DB_PORT=${DB_PORT:-5432}
+      - MEDIA_ROOT=${MEDIA_ROOT:-/app/media}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./backend/media:/app/media
+      - postgres_media:/app/media
+      - backend_static:/app/static
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    # Healthcheck для Django
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Логирование
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Ограничение ресурсов
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   postgres_data:
+  postgres_media:
+  backend_static:
