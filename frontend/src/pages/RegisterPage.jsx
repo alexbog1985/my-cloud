@@ -14,7 +14,7 @@ const formFields = [
 
 export default function RegisterPage() {
 
-  const { formData, handleChange, handleSubmit } = useAuthForm(formFields, '/files')
+  const { formData, handleChange, handleSubmit } = useAuthForm(formFields, '/files', false)
   const isLoading = useSelector(state => state.auth.loading)
   const errors = useSelector(state => state.auth.errors);
 
