@@ -5,25 +5,27 @@ from django.utils.translation import gettext as _
 
 class CustomPasswordValidator:
     def validate(self, password, user=None):
-        if not re.search(r'[A-Z]', password):
+        if not re.search(r"[A-Z]", password):
             raise ValidationError(
                 _("Пароль должен содержать хотя бы одну заглавную букву."),
-                code='password_no_uppercase'
+                code="password_no_uppercase",
             )
-        if not re.search(r'[a-z]', password):
+        if not re.search(r"[a-z]", password):
             raise ValidationError(
                 _("Пароль должен содержать хотя бы одну строчную букву."),
-                code='password_no_lowercase'
+                code="password_no_lowercase",
             )
-        if not re.search(r'\d', password):
+        if not re.search(r"\d", password):
             raise ValidationError(
                 _("Пароль должен содержать хотя бы одну цифру."),
-                code='password_no_digit'
+                code="password_no_digit",
             )
-        if not re.search(r'[@$!%*?&]', password):
+        if not re.search(r"[@$!%*?&]", password):
             raise ValidationError(
-                _("Пароль должен содержать хотя бы один специальный символ (@, $, !, %, *, ?, &)."),
-                code='password_no_special'
+                _(
+                    "Пароль должен содержать хотя бы один специальный символ (@, $, !, %, *, ?, &)."
+                ),
+                code="password_no_special",
             )
 
     def get_help_text(self):

@@ -8,7 +8,11 @@ export default defineConfig(({ mode }) => {
     return {
       plugins: [react()],
       build: {
+        // Собираем в frontend/dist для гибкой интеграции с Django
         outDir: 'dist',
+        assetsDir: 'assets',
+        emptyOutDir: true,
+        manifest: true, // Генерируем manifest.json для django-vite
         sourcemap: false, // Отключаем sourcemaps для продакшена (безопасность)
         minify: 'terser',
         terserOptions: {
@@ -18,18 +22,20 @@ export default defineConfig(({ mode }) => {
         },
         rollupOptions: {
           output: {
-            manualChunks: {
+            manualChunks: (id) => {
               // Разделение зависимостей на чанки для лучшей кэшируемости
-              react: ['react', 'react-dom', 'react-router-dom'],
-              redux: ['@reduxjs/toolkit', 'react-redux'],
-              bootstrap: ['bootstrap', 'react-bootstrap-icons'],
+              if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+                return 'react';
+              }
+              if (id.includes('node_modules/@reduxjs/toolkit') || id.includes('node_modules/react-redux')) {
+                return 'redux';
+              }
+              if (id.includes('node_modules/bootstrap') || id.includes('node_modules/react-bootstrap-icons')) {
+                return 'bootstrap';
+              }
             },
           },
         },
-      },
-      server: {
-        port: 5173,
-        host: true,
       },
     }
   }

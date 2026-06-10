@@ -28,6 +28,9 @@ migrations/
 db.sqlite3
 *.sqlite3
 
+# Игнорируем корневой static/ (для collectstatic)
+static
+
 # === Django Debug Toolbar ===
 .debug_panel/
 
@@ -56,6 +59,12 @@ yarn-debug.log
 /out/
 /coverage/
 *.log
+
+# Django Vite - генерируемые файлы (можно закоммитить, но обычно их игнорируют)
+frontend/dist/
+frontend/dist/.vite/manifest.json
+backend/staticfiles/
+backend/staticfiles/manifest.json
 
 # Environment variables (но оставляем .env.example для репозитория)
 .env

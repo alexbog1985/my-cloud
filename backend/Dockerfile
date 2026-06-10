@@ -100,5 +100,13 @@ RUN pip install --no-cache-dir gunicorn uvicorn
 # Скрипт ожидания готовности БД (после USER appuser)
 COPY --chmod=755 backend/wait-for-db.sh /wait-for-db.sh
 
+# Сборка фронтенда перед запуском
+COPY --chown=appuser:appgroup frontend/ ./frontend/
+
+RUN cd frontend && npm ci --silent && npm run build -- --mode production
+
+# Копируем собранную статику в staticfiles для Django
+RUN mkdir -p /app/mycloud/staticfiles && cp -r /app/frontend/dist/* /app/mycloud/staticfiles/
+
 # По умолчанию запускаем в продакшн-режиме через Gunicorn
 CMD ["/wait-for-db.sh"]

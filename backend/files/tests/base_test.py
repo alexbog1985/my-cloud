@@ -8,40 +8,59 @@ from django.test import TestCase
 class BaseTestCase(TestCase):
     """Базовый класс для тестов с автоматической очисткой медиа-файлов"""
 
+    @classmethod
+    def setUpClass(cls):
+        """Сохраняем список существующих файлов и очищаем media перед началом тестов"""
+        super().setUpClass()
+
+        cls.media_root = Path(settings.MEDIA_ROOT)
+        cls.existing_files = set()
+
+        if cls.media_root.exists():
+            for path in cls.media_root.rglob("*"):
+                if path.is_file():
+                    cls.existing_files.add(path)
+
+        try:
+            if cls.media_root.exists():
+                for item in cls.media_root.iterdir():
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item)
+        except Exception:
+            pass
+
     def setUp(self):
-        """Сохраняем список существующих файлов перед тестом"""
+        """Сохраняем список существующих файлов перед каждым тестом"""
         super().setUp()
-        self.media_root = Path(settings.MEDIA_ROOT)
-        self.existing_files = set()
+
+        self.test_files = set()
 
         if self.media_root.exists():
-            for path in self.media_root.rglob('*'):
+            for path in self.media_root.rglob("*"):
                 if path.is_file():
-                    self.existing_files.add(path)
+                    self.test_files.add(path)
 
     def tearDown(self):
         """Удаляем новые файлы, созданные во время теста"""
-        super().tearDown()
-
-        # Проверяем, что media_root был инициализирован
-        if not hasattr(self, 'media_root'):
-            return
-
         if self.media_root.exists():
             current_files = set()
-            for path in self.media_root.rglob('*'):
+            for path in self.media_root.rglob("*"):
                 if path.is_file():
                     current_files.add(path)
 
-            # Удаляем файлы, которые появились во время теста
-            new_files = current_files - self.existing_files
+            new_files = current_files - self.test_files
             for file_path in new_files:
                 try:
                     file_path.unlink()
-                    # Удаляем пустые родительские директории
                     self._remove_empty_dirs(file_path.parent)
                 except Exception:
                     pass
+
+            self._remove_empty_dirs(self.media_root)
+
+        super().tearDown()
 
     def _remove_empty_dirs(self, dir_path: Path):
         """Удаляет пустые директории рекурсивно"""

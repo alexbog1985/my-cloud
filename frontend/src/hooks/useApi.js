@@ -1,7 +1,7 @@
 import api from '../services/api';
 import { useDispatch } from 'react-redux';
 import { useCallback } from 'react';
-import {logout, updateToken} from '../store/slices/authSlice';
+import { logout, updateToken } from '../store/slices/authSlice';
 
 export const useApi = () => {
   const dispatch = useDispatch();
@@ -37,5 +37,25 @@ export const useApi = () => {
     }
   }, [dispatch]);
 
-  return { request };
+  // Асинхронный logout с запросом на backend
+  const performLogout = useCallback(async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    const token = localStorage.getItem('token');
+
+    if (refreshToken) {
+      try {
+        await api.post('/api/logout/', { refresh: refreshToken }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.warn('Logout API request failed:', error);
+      }
+    }
+
+    dispatch(logout());
+  }, [dispatch]);
+
+  return { request, performLogout };
 };
