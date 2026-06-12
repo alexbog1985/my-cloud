@@ -1,4 +1,4 @@
-.PHONY: migrate run build-frontend deploy test lint format install install-frontend
+.PHONY: migrate run build-frontend deploy test lint format install install-frontend env-check setup
 
 migrate:
 	@echo "Применение миграций..."
@@ -24,7 +24,15 @@ install:
 	@echo "Установка pre-commit хуков..."
 	pre-commit install
 
-deploy: build-frontend migrate run
+env-check:
+	@echo "Проверка .env файла..."
+	@test -f backend/.env || (echo "❌ Файл backend/.env не найден!" && echo "Создайте файл из .env.example: cp backend/.env.example backend/.env" && exit 1)
+	@echo "✅ .env файл найден"
+
+setup: install install-frontend env-check
+	@echo "Настройка проекта завершена"
+
+deploy: build-frontend migrate
 	@echo "Деплой завершен!"
 
 test:
@@ -39,4 +47,4 @@ lint:
 format:
 	@echo "Форматирование кода..."
 	black ./backend/files ./backend/users ./backend/mycloud
-	isort ./backend/files ./backend/users $./backend/mycloud
+	isort ./backend/files ./backend/users ./backend/mycloud
