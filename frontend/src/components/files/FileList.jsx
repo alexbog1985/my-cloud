@@ -42,7 +42,7 @@ export default function FileList() {
     );
   }
 
-  if (files.length === 0) {
+  if (!files || files.length === 0) {
     return (
       <div className="text-center py-5 text-muted">
         <p>У вас пока нет загруженных файлов</p>
