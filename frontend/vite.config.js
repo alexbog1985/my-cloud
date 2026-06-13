@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
       },
     }
   }
-  
+
   // Конфигурация для разработки
   return {
     plugins: [react()],
