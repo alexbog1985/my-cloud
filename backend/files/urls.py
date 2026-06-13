@@ -7,5 +7,4 @@ router.register(r'files', views.FileViewSet, basename='files')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('s/<str:special_link>/', views.FileDownloadByLinkView.as_view(), name='file-download-by-link'),
 ]

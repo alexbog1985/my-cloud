@@ -18,8 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from files.views import FileDownloadByLinkView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('s/<str:special_link>/', FileDownloadByLinkView.as_view(), name='file-download-by-link'),
     path('api/', include('users.urls')),
     path('api/', include('files.urls')),
     # JWT
