@@ -13,7 +13,7 @@ export function useAuth() {
     try {
       dispatch(setLoading());
       const response = await request({
-        url: '/users/me/',
+        url: '/api/users/me/',
         method: 'GET',
       });
       dispatch(setUser(response.data))

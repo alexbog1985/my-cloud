@@ -7,8 +7,12 @@ export const useApi = () => {
   const dispatch = useDispatch();
 
   const request = useCallback(async (config) => {
+    const { onUploadProgress, ...restConfig } = config;
     try {
-      return await api(config);
+      return await api({
+        ...restConfig,
+        onUploadProgress,
+      });
     } catch (error) {
       if (error.response?.status === 401) {
         const refreshToken = localStorage.getItem('refreshToken');
@@ -18,7 +22,7 @@ export const useApi = () => {
         }
 
         try {
-          const response = await api.post('/token/refresh/', { refresh: refreshToken });
+          const response = await api.post('/api/token/refresh/', { refresh: refreshToken });
           const newToken = response.data.access;
 
           dispatch(updateToken(newToken));

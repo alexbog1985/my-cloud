@@ -12,7 +12,6 @@ export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', valida
       const { isValid } = validateFormLocal();
 
       if (!isValid) {
-        // Ошибки уже установлены в useAuthFormState через dispatch
         return;
       }
     }
@@ -20,7 +19,7 @@ export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', valida
     try {
       await handleSubmitRequest(apiUrl, formData);
     } catch (err) {
-      // Ошибки уже обработаны в useAuthSubmit
+      console.error(err);
     }
   };
 
