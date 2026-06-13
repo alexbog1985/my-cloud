@@ -17,7 +17,7 @@ export const useUsers = () => {
   const fetchUsers = useCallback(async () => {
     dispatch(setLoading());
     try {
-      const response = await request({ url: "/users/all", method: "GET" });
+      const response = await request({ url: "/api/users/all", method: "GET" });
       dispatch(setUsers(response.data));
     } catch (err) {
       error(err.response?.data?.error || 'Ошибка загрузки пользователей');
@@ -26,7 +26,7 @@ export const useUsers = () => {
 
   const toggleAdmin = useCallback(async (userId) => {
     try {
-      const response = await request({url: `/users/${userId}/toggle-admin/`, method: "PUT"});
+      const response = await request({url: `/api/users/${userId}/toggle-admin/`, method: "PUT"});
       dispatch(updateUser(response.data));
     } catch (err) {
       error(err.response?.data?.error || 'Ошибка изменения прав администратора');
@@ -35,7 +35,7 @@ export const useUsers = () => {
 
   const deleteUser = useCallback(async (userId) => {
     try {
-      await request({ url: `/users/${userId}/delete/`, method: 'DELETE' });
+      await request({ url: `/api/users/${userId}/delete/`, method: 'DELETE' });
       dispatch(removeUser(userId));
     } catch (err) {
       error(err.response?.data?.error || 'Ошибка удаления пользователя');    }
