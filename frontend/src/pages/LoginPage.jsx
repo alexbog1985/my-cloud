@@ -26,7 +26,7 @@ export default function LoginPage() {
             formData={formData}
             errors={errors}
             onChange={handleChange}
-            onSubmit={(e) => handleSubmit(e, '/login/')}
+            onSubmit={(e) => handleSubmit(e, '/api/login/')}
             isLoading={isLoading}
             footerLink={{
               text: "Нет учетной записи?",

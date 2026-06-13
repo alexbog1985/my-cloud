@@ -30,7 +30,7 @@ export default function RegisterPage() {
             formData={formData}
             errors={errors}
             onChange={handleChange}
-            onSubmit={(e) => handleSubmit(e, '/register/')}
+            onSubmit={(e) => handleSubmit(e, '/api/register/')}
             isLoading={isLoading}
             footerLink={{
               text: "Уже есть аккаунт?",
