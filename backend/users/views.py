@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
 
@@ -71,3 +72,13 @@ class RegisterView(APIView):
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # В этой версии rest_framework_simplejwt нет blacklist,
+        # поэтому просто возвращаем успешный ответ
+        # Токены будут очищены на клиенте
+        return Response(status=status.HTTP_204_NO_CONTENT)

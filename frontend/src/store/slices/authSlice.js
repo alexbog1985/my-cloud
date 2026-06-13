@@ -1,4 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import api from '../../services/api';
 
 const initialState = {
   user: null,
@@ -7,6 +8,17 @@ const initialState = {
   loading: false,
   errors: {},
 };
+
+export const logoutAction = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await api.post('/api/logout/');
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Logout failed');
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -33,14 +45,6 @@ const authSlice = createSlice({
     clearErrors: (state) => {
       state.errors = {};
     },
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.errors = {};
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-    },
     setToken: (state, action) => {
       state.token = action.payload;
       localStorage.setItem('token', action.payload);
@@ -49,12 +53,29 @@ const authSlice = createSlice({
       state.token = action.payload;
       localStorage.setItem('token', action.payload);
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(logoutAction.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutAction.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.errors = {};
+        state.loading = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+      })
+      .addCase(logoutAction.rejected, (state) => {
+        state.loading = false;
+      });
   }
 });
 
 export const {
   setUser,
-  logout,
   setErrors,
   setLoading,
   setToken,

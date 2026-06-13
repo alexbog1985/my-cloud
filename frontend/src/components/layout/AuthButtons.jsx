@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import LoadingIndicator from '../ui/LoadingIndicator.jsx';
-import { logout } from '../../store/slices/authSlice.js';
+import { logoutAction } from '../../store/slices/authSlice.js';
 
 export default function AuthButtons() {
   const dispatch = useDispatch();
@@ -11,14 +11,14 @@ export default function AuthButtons() {
   const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
   const user = useSelector(state => state.auth.user);
 
+  const handleLogout = () => {
+    dispatch(logoutAction());
+    navigate('/login');
+  };
+
   if (loading) {
     return <LoadingIndicator size="sm" />;
   }
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
 
   if (isAuthenticated && user) {
     const userInitial = (user.username || '?').charAt(0).toUpperCase();

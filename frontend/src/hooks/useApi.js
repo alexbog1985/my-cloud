@@ -1,7 +1,7 @@
 import api from '../services/api';
 import { useDispatch } from 'react-redux';
 import { useCallback } from 'react';
-import {logout, updateToken} from '../store/slices/authSlice';
+import {logoutAction, setToken} from '../store/slices/authSlice';
 
 export const useApi = () => {
   const dispatch = useDispatch();
@@ -17,7 +17,7 @@ export const useApi = () => {
       if (error.response?.status === 401) {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
-          dispatch(logout());
+          dispatch(logoutAction());
           return Promise.reject(error);
         }
 
@@ -25,7 +25,7 @@ export const useApi = () => {
           const response = await api.post('/api/token/refresh/', { refresh: refreshToken });
           const newToken = response.data.access;
 
-          dispatch(updateToken(newToken));
+          dispatch(setToken(newToken));
 
           config.headers = {
             ...config.headers,
@@ -33,7 +33,7 @@ export const useApi = () => {
           };
           return await api(config);
         } catch (refreshError) {
-          dispatch(logout());
+          dispatch(logoutAction());
           return Promise.reject(refreshError);
         }
       }
