@@ -68,8 +68,8 @@ class File(models.Model):
         return f"{self.original_name} ({self.user.username})"
 
     def save(self, *args, **kwargs):
-        if not self.pk:
-            self.original_name = self.file.name or os.path.basename(self.file.name)
+        if not self.pk and self.file:
+            self.original_name = os.path.basename(self.file.name)
             if not self.special_link:
                 self.special_link = self.generate_special_link()
 
