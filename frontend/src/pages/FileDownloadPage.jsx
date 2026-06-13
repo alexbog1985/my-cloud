@@ -22,7 +22,7 @@ export default function FileDownloadPage() {
     };
 
     downloadAndClose().then();
-  }, [specialLink, downloadByLink, error]);
+  }, [specialLink, downloadByLink]);
 
   if (status === 'loading') {
     return (
