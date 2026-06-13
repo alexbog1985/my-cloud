@@ -21,11 +21,12 @@ export default function AuthButtons() {
   };
 
   if (isAuthenticated && user) {
+    const userInitial = (user.username || '?').charAt(0).toUpperCase();
     return (
       <div className="d-flex align-items-center gap-2">
         <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
              style={{ width: '32px', height: '32px', fontSize: '0.875rem', fontWeight: '500' }}>
-          {user.username.charAt(0).toUpperCase()}
+          {userInitial}
         </div>
         <span className="d-none d-md-block text-dark fw-semibold text-nowrap">
           {user.full_name || user.username}
