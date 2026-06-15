@@ -13,7 +13,6 @@ class UserSerializer(serializers.ModelSerializer):
     file_count = serializers.SerializerMethodField()
     storage_size = serializers.SerializerMethodField()
 
-
     class Meta:
         model = User
         fields = (
@@ -41,12 +40,16 @@ class UserSerializer(serializers.ModelSerializer):
         )['total_size']
         return total_size or 0
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     username = serializers.CharField(validators=[validate_username])
+    access_token = serializers.CharField(read_only=True)
+    refresh_token = serializers.CharField(read_only=True)
+
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password')
+        fields = ('username', 'first_name', 'last_name', 'email', 'password', 'access_token', 'refresh_token')
 
     def create(self, validated_data):
         password = validated_data.pop('password')
@@ -59,12 +62,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
+        # Добавляем токены в пользовательский объект
         refresh = RefreshToken.for_user(user)
-        return {
-            'user': UserSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
+        user.access_token = str(refresh.access_token)
+        user.refresh_token = str(refresh)
+
+        return user
+
 
 class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
