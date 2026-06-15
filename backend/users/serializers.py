@@ -119,7 +119,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data: Валидные данные из сериализатора
 
         Returns:
-            User: Созданный пользователь с добавленными токенами
+            User: Созданный пользователь
         """
         password = validated_data.pop('password')
         user = User(
@@ -137,6 +137,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.refresh_token = str(refresh)
 
         return user
+
+    def to_representation(self, instance):
+        """Преобразует объект пользователя в словарь для ответа
+
+        Args:
+            instance: Объект пользователя
+
+        Returns:
+            dict: Словарь с данными пользователя и токенами
+        """
+        return {
+            'username': instance.username,
+            'first_name': instance.first_name,
+            'last_name': instance.last_name,
+            'email': instance.email,
+            'access_token': instance.access_token,
+            'refresh_token': instance.refresh_token
+        }
 
 
 class LoginSerializer(TokenObtainPairSerializer):
