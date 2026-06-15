@@ -30,13 +30,14 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['delete'], url_path='delete')
     def delete_user(self, request, pk=None):
-        if not request.user.is_admin:
-            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
-
         try:
             user = User.objects.get(pk=pk)
+            # Проверка: нельзя удалять самого себя
             if user == request.user:
                 return Response({"error": "Нельзя удалить самого себя"}, status=status.HTTP_400_BAD_REQUEST)
+            # Проверка прав только для операций над другими пользователями
+            if not request.user.is_admin:
+                return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
             user.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
@@ -44,13 +45,14 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['put'], url_path='toggle-admin')
     def toggle_admin(self, request, pk=None):
-        if not request.user.is_admin:
-            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
-
         try:
             user = User.objects.get(pk=pk)
+            # Проверка: нельзя менять свои права
             if user == request.user:
-                return Response({"error": "Недостаточно прав"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Нельзя изменить свои права"}, status=status.HTTP_400_BAD_REQUEST)
+            # Проверка прав только для операций над другими пользователями
+            if not request.user.is_admin:
+                return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
             user.is_admin = not user.is_admin
             user.save()
             return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
@@ -64,8 +66,9 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            result = serializer.save()
-            return Response(result, status=status.HTTP_201_CREATED)
+            user = serializer.save()
+            # Возвращаем данные пользователя с токенами
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
