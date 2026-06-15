@@ -51,9 +51,9 @@ def admin_password():
     return 'AdminPass123!'
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def api_client():
-    """Экземпляр APIClient для тестов"""
+    """Экземпляр APIClient для тестов (создается новый для каждого теста)"""
     return APIClient()
 
 
