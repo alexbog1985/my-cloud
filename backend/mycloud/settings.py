@@ -82,16 +82,16 @@ WSGI_APPLICATION = 'mycloud.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
     # 'default': {
-    #     'ENGINE': env_config('DB_ENGINE'),
-    #     'NAME': env_config('DB_NAME'),
-    #     'USER': env_config('DB_USER'),
-    #     'PASSWORD': env_config('DB_PASSWORD'),
-    #     'HOST': env_config('DB_HOST'),
-    #     'PORT': env_config('DB_PORT', default='5432'),
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    'default': {
+        'ENGINE': env_config('DB_ENGINE'),
+        'NAME': env_config('DB_NAME'),
+        'USER': env_config('DB_USER'),
+        'PASSWORD': env_config('DB_PASSWORD'),
+        'HOST': env_config('DB_HOST'),
+        'PORT': env_config('DB_PORT', default='5432'),
     # }
     }
 }
