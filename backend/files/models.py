@@ -5,6 +5,8 @@ import random
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 User = get_user_model()
 
@@ -17,6 +19,7 @@ class File(models.Model):
     original_name = models.CharField(
         'Оригинальное имя',
         max_length=255,
+        blank=True,
         help_text='Оригинальное имя файла'
     )
     file = models.FileField(
@@ -69,7 +72,7 @@ class File(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            self.original_name = self.file.name or os.path.basename(self.file.name)
+            # Автогенерация special_link
             if not self.special_link:
                 self.special_link = self.generate_special_link()
 
@@ -92,3 +95,14 @@ class File(models.Model):
 
     def get_download_filename(self):
         return self.original_name
+
+
+@receiver(pre_save, sender=File)
+def set_original_name_from_file(sender, instance, **kwargs):
+    """Устанавливает original_name из имени файла до применения upload_to()
+    
+    Этот сигнал вызывается до сохранения, когда Django еще не применил
+    upload_to(), поэтому instance.file.name содержит оригинальное имя.
+    """
+    if not instance.pk and not instance.original_name and instance.file and hasattr(instance.file, 'name'):
+        instance.original_name = os.path.basename(instance.file.name)

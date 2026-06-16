@@ -13,7 +13,7 @@ User = get_user_model()
 @pytest.fixture(scope='session')
 def django_db_setup():
     """Настройка тестовой базы данных
-    
+
     Этот фикстур определяет, как pytest-django будет управлять базой данных:
     - В режиме по умолчанию (scope='session') база создается один раз для всех тестов
     - Для тестов с транзакциями используйте fixture с scope='function'
@@ -22,10 +22,22 @@ def django_db_setup():
     pass
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def media_root():
     """Временная папка для медиа-файлов во время тестов"""
+    import os
+    import shutil
     temp_dir = tempfile.mkdtemp()
+    
+    # Очищаем медиа-директорию перед тестом
+    if os.path.exists(temp_dir):
+        for item in os.listdir(temp_dir):
+            item_path = os.path.join(temp_dir, item)
+            if os.path.isfile(item_path):
+                os.unlink(item_path)
+            elif os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+    
     yield temp_dir
     shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -84,7 +96,7 @@ def admin_user_data():
 @pytest.fixture
 def authenticated_client(api_client, user_password):
     """Аутентифицированный клиент для тестов
-    
+
     С scope='function' для создания нового пользователя в каждой тесте
     """
     from users.factories import UserFactory
@@ -106,21 +118,21 @@ def authenticated_admin_client(api_client, admin_password):
 def get_jwt_tokens():
     """Функция для получения JWT токенов"""
     from rest_framework_simplejwt.tokens import RefreshToken
-    
+
     def _get_tokens(user):
         refresh = RefreshToken.for_user(user)
         return {
             'access': str(refresh.access_token),
             'refresh': str(refresh)
         }
-    
+
     return _get_tokens
 
 
 @pytest.fixture
 def auth_headers(get_jwt_tokens):
     """Функция для получения заголовков авторизации с JWT токеном
-    
+
     Usage:
         headers = auth_headers(user)
         response = client.get('/api/users/me/', headers=headers)
@@ -131,5 +143,5 @@ def auth_headers(get_jwt_tokens):
             'Authorization': f'Bearer {tokens["access"]}',
             'Content-Type': 'application/json'
         }
-    
+
     return _get_auth_headers
