@@ -31,10 +31,10 @@ class TestRegisterView:
         response = api_client.post(self.url, data, format='json')
 
         assert response.status_code == 201
-        assert response.data['username'] == 'testuser'
-        assert response.data['email'] == 'test@example.com'
-        assert 'access_token' in response.data
-        assert 'refresh_token' in response.data
+        assert response.data['user']['username'] == 'testuser'
+        assert response.data['user']['email'] == 'test@example.com'
+        assert 'access' in response.data
+        assert 'refresh' in response.data
 
     def test_register_invalid_username(self, api_client, default_user_data):
         """Невалидный логин (формат, длина)"""
@@ -106,10 +106,10 @@ class TestRegisterView:
         """Проверка генерации JWT токенов"""
         response = api_client.post(self.url, default_user_data, format='json')
 
-        assert 'access_token' in response.data
-        assert 'refresh_token' in response.data
-        assert len(response.data['access_token']) > 0
-        assert len(response.data['refresh_token']) > 0
+        assert 'access' in response.data
+        assert 'refresh' in response.data
+        assert len(response.data['access']) > 0
+        assert len(response.data['refresh']) > 0
 
 
 # ============ Тесты LoginView ============

@@ -67,8 +67,12 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Возвращаем данные пользователя с токенами
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Возвращаем токены и данные пользователя в стандартизированном формате
+            return Response({
+                'access': user.access_token,
+                'refresh': user.refresh_token,
+                'user': UserSerializer(user).data
+            }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

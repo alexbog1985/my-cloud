@@ -101,16 +101,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         serializers: Базовый класс ModelSerializer
 
     Returns:
-        User: Объект пользователя с добавленными токенами access_token и refresh_token
+        User: Объект пользователя с добавленными токенами access и refresh
     """
     password = serializers.CharField(write_only=True, validators=[validate_password])
     username = serializers.CharField(validators=[validate_username])
-    access_token = serializers.CharField(read_only=True)
-    refresh_token = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password', 'access_token', 'refresh_token')
+        fields = ('username', 'first_name', 'last_name', 'email', 'password')
 
     def create(self, validated_data):
         """Создает нового пользователя с захэшированным паролем и токенами
@@ -152,8 +150,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             'first_name': instance.first_name,
             'last_name': instance.last_name,
             'email': instance.email,
-            'access_token': instance.access_token,
-            'refresh_token': instance.refresh_token
+            'access': instance.access_token,
+            'refresh': instance.refresh_token
         }
 
 

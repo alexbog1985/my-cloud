@@ -7,6 +7,8 @@
 """
 import pytest
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from users.factories import UserFactory, AdminUserFactory
 from users.models import User
 from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
@@ -167,11 +169,11 @@ class TestRegisterSerializer:
         assert user.first_name == 'New'
         assert user.last_name == 'User'
 
-        # Проверяем, что токены сгенерированы
+        # Проверяем, что токены сгенерированы (не пустые)
         assert hasattr(user, 'access_token')
         assert hasattr(user, 'refresh_token')
-        assert user.access_token is not None
-        assert user.refresh_token is not None
+        assert len(user.access_token) > 0
+        assert len(user.refresh_token) > 0
 
     def test_register_serializer_invalid_username(self, invalid_data_username):
         """

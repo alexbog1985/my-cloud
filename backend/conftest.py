@@ -1,8 +1,14 @@
-"""Конфигурация для pytest-django"""
+"""
+Конфигурация для pytest-django
+
+Использует отдельную тестовую базу данных для изоляции от основной БД.
+"""
+import os
 import shutil
 import tempfile
 
 import pytest
+from decouple import config as decouple_config, UndefinedValueError
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 
@@ -13,30 +19,27 @@ User = get_user_model()
 @pytest.fixture(scope='session')
 def django_db_setup():
     """Настройка тестовой базы данных
-
-    Этот фикстур определяет, как pytest-django будет управлять базой данных:
-    - В режиме по умолчанию (scope='session') база создается один раз для всех тестов
-    - Для тестов с транзакциями используйте fixture с scope='function'
+    
+    Перед запуском тестов загружает переменные из .env.test для изоляции от основной БД.
+    pytest-django автоматически создает и очищает базу данных между тестами.
     """
-    # Указываем, что используем настройки из Django
-    pass
+    # Загружаем переменные окружения из .env.test для тестов
+    test_env_file = os.path.join(os.path.dirname(__file__), '.env.test')
+    if os.path.exists(test_env_file):
+        # Загружаем переменные вручную
+        with open(test_env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ.setdefault(key, value)
 
 
 @pytest.fixture(scope='function')
 def media_root():
     """Временная папка для медиа-файлов во время тестов"""
-    import os
-    import shutil
     temp_dir = tempfile.mkdtemp()
-    
-    # Очищаем медиа-директорию перед тестом
-    if os.path.exists(temp_dir):
-        for item in os.listdir(temp_dir):
-            item_path = os.path.join(temp_dir, item)
-            if os.path.isfile(item_path):
-                os.unlink(item_path)
-            elif os.path.isdir(item_path):
-                shutil.rmtree(item_path)
     
     yield temp_dir
     shutil.rmtree(temp_dir, ignore_errors=True)
