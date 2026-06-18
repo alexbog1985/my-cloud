@@ -13,7 +13,7 @@ export const useRenameFile = () => {
       error(err.response?.data?.detail || 'Ошибка переименования файла');
       throw err;
     }
-  }, [updateFile]);
+  }, [updateFile, error]);
 
   return { renameFile };
 }

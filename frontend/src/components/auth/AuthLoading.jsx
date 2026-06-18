@@ -14,7 +14,8 @@ export default function AuthLoading({ children }) {
     if (token && !isAuthenticated) {
       fetchUser().finally(() => setIsCheckingAuth(false));
     } else {
-      setIsCheckingAuth(false);
+      // Не вызываем setState внутри useEffect, если нет асинхронной операции
+      // Состояние и так false по умолчанию
     }
   }, [isAuthenticated, fetchUser]);
 

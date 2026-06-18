@@ -24,7 +24,7 @@ export default function RenameModal({ show, file, onRename, onClose }) {
     try {
       await onRename(file.id, { original_name: newName, comment: newComment });
       onClose();
-    } catch (error) {
+    } catch {
       setError('Ошибка обновления файла');
     }
   };
