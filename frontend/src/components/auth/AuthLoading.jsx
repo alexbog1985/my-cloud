@@ -12,10 +12,15 @@ export default function AuthLoading({ children }) {
     const token = localStorage.getItem("token");
 
     if (token && !isAuthenticated) {
-      fetchUser().finally(() => setIsCheckingAuth(false));
+      fetchUser().catch(() => {
+        // Если запрос не удался, все равно сбрасываем состояние загрузки
+        setIsCheckingAuth(false);
+      }).finally(() => {
+        setIsCheckingAuth(false);
+      });
     } else {
-      // Не вызываем setState внутри useEffect, если нет асинхронной операции
-      // Состояние и так false по умолчанию
+      // Если нет токена или уже авторизован - сбрасываем состояние
+      setIsCheckingAuth(false);
     }
   }, [isAuthenticated, fetchUser]);
 
