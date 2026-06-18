@@ -11,29 +11,10 @@ import pytest
 from decouple import config as decouple_config, UndefinedValueError
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
+from django.conf import settings
 
 
 User = get_user_model()
-
-
-@pytest.fixture(scope='session')
-def django_db_setup():
-    """Настройка тестовой базы данных
-    
-    Перед запуском тестов загружает переменные из .env.test для изоляции от основной БД.
-    pytest-django автоматически создает и очищает базу данных между тестами.
-    """
-    # Загружаем переменные окружения из .env.test для тестов
-    test_env_file = os.path.join(os.path.dirname(__file__), '.env.test')
-    if os.path.exists(test_env_file):
-        # Загружаем переменные вручную
-        with open(test_env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    if '=' in line:
-                        key, value = line.split('=', 1)
-                        os.environ.setdefault(key, value)
 
 
 @pytest.fixture(scope='function')
