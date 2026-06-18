@@ -36,8 +36,8 @@ class TestFileUrls:
 
     def test_file_download_by_link_url(self):
         """GET /s/{special_link}/ - скачивание файла по специальной ссылке"""
-        assert reverse('file-download-by-link', kwargs={'special_link': 'abc123'}) == '/s/abc123/'
-        assert resolve('/s/abc123/').view_name == 'file-download-by-link'
+        assert reverse('file-download-by-link', kwargs={'special_link': 'abc123'}) == '/api/s/abc123/'
+        assert resolve('/api/s/abc123/').view_name == 'file-download-by-link'
 
 
 # ============ Тесты URL реверсов с authenticated client ============

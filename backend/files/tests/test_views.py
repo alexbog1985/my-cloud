@@ -367,14 +367,14 @@ class TestFileDownloadByLinkView:
         """Публичное скачивание файла по специальной ссылке"""
         file = FileFactory.create()
         
-        response = api_client.get(f'/s/{file.special_link}/')
+        response = api_client.get(f'/api/s/{file.special_link}/')
         
         assert response.status_code == 200
         assert response['Content-Disposition'] == f'attachment; filename="{file.original_name}"'
 
     def test_download_by_link_not_found(self, api_client):
         """Попытка скачивания по несуществующей ссылке"""
-        response = api_client.get('/s/nonexistentlink123/')
+        response = api_client.get('/api/s/nonexistentlink123/')
         
         assert response.status_code == 404
 
@@ -382,7 +382,7 @@ class TestFileDownloadByLinkView:
         """Проверка обновления last_download_at при скачивании по ссылке"""
         file = FileFactory.create()
         
-        response = api_client.get(f'/s/{file.special_link}/')
+        response = api_client.get(f'/api/s/{file.special_link}/')
         
         assert response.status_code == 200
         
@@ -394,7 +394,7 @@ class TestFileDownloadByLinkView:
         """Скачивание файла с параметром info=true"""
         file = FileFactory.create()
         
-        response = api_client.get(f'/s/{file.special_link}/?info=true')
+        response = api_client.get(f'/api/s/{file.special_link}/?info=true')
         
         assert response.status_code == 200
         # Возвращает JSON с публичными данными файла

@@ -288,10 +288,10 @@ class TestUserViewSet:
         assert response.status_code == 404
         assert 'error' in response.data
 
-    def test_toggle_admin_admin(self, authenticated_admin_client, user_password, admin_password):
+    def test_toggle_admin_admin(self, authenticated_admin_client, user_password, admin_password, django_db_reset_sequences):
         """PUT /api/users/{id}/toggle-admin/ - переключение прав администратора"""
         client, admin = authenticated_admin_client
-        user = UserFactory.create(username='user', is_admin=False)
+        user = UserFactory.create(username='user_toggle_admin', is_admin=False)
 
         # Переключаем в администраторы
         response = client.put(f'/api/users/{user.id}/toggle-admin/')
