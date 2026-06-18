@@ -202,6 +202,131 @@ class TestLoginView:
         assert len(response.data['refresh']) > 0
 
 
+# ============ Тесты LogoutView ============
+
+@pytest.mark.django_db
+class TestLogoutView:
+    """Тесты эндпоинта выхода из системы"""
+
+    url = reverse('logout')
+
+    def test_logout_success(self, api_client, user_password):
+        """Успешный выход с валидным refresh токеном"""
+        from users.factories import UserFactory
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        user = UserFactory.create(username='testuser', password=user_password)
+        refresh = RefreshToken.for_user(user)
+        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(refresh.access_token)}')
+
+        data = {
+            'refresh': str(refresh)
+        }
+
+        response = api_client.post(self.url, data, format='json')
+
+        assert response.status_code == 205
+
+        # Проверяем, что токен добавлен в blacklist
+        from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+        # Получаем jti из токена и ищем в BlacklistedToken
+        jti = refresh.payload['jti']
+        assert BlacklistedToken.objects.filter(token__jti=jti).exists()
+
+    def test_logout_without_refresh_token(self, api_client, user_password):
+        """Выход без refresh токена в body"""
+        from users.factories import UserFactory
+        user = UserFactory.create(username='testuser', password=user_password)
+        api_client.force_authenticate(user=user)
+
+        # Отправляем пустой body
+        response = api_client.post(self.url, format='json')
+
+        assert response.status_code == 403
+
+    def test_logout_invalid_token(self, api_client, user_password):
+        """Выход с невалидным refresh токеном"""
+        from users.factories import UserFactory
+        user = UserFactory.create(username='testuser', password=user_password)
+        api_client.force_authenticate(user=user)
+
+        data = {
+            'refresh': 'invalid_token_string'
+        }
+
+        response = api_client.post(self.url, data, format='json')
+
+        assert response.status_code == 403
+
+    def test_logout_unauthenticated(self, api_client):
+        """Выход без аутентификации"""
+        data = {
+            'refresh': 'some_token'
+        }
+
+        response = api_client.post(self.url, data, format='json')
+
+        assert response.status_code == 401
+
+    def test_logout_token_cannot_be_reused(self, api_client, user_password):
+        """Проверка, что logout токен нельзя использовать повторно"""
+        from users.factories import UserFactory
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.urls import reverse
+
+        user = UserFactory.create(username='testuser', password=user_password)
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+
+        # Сначала logout
+        data = {
+            'refresh': str(refresh)
+        }
+        response = api_client.post(self.url, data, format='json')
+        assert response.status_code == 205
+
+        # Пытаемся использовать тот же refresh токен для обновления access
+        refresh_url = reverse('token_refresh')
+        response = api_client.post(refresh_url, {'refresh': str(refresh)}, format='json')
+        assert response.status_code == 401
+
+    def test_logout_missing_refresh_token(self, api_client, user_password):
+        """Выход без refresh токена в body"""
+        from users.factories import UserFactory
+        user = UserFactory.create(username='testuser', password=user_password)
+        api_client.force_authenticate(user=user)
+
+        # Отправляем пустой body
+        response = api_client.post(self.url, format='json')
+
+        assert response.status_code == 403
+
+    def test_logout_invalid_token(self, api_client, user_password):
+        """Выход с невалидным refresh токеном"""
+        from users.factories import UserFactory
+        user = UserFactory.create(username='testuser', password=user_password)
+        api_client.force_authenticate(user=user)
+
+        data = {
+            'refresh': 'invalid_token_string'
+        }
+
+        response = api_client.post(self.url, data, format='json')
+
+        assert response.status_code == 403
+
+    def test_logout_unauthenticated(self, api_client):
+        """Выход без аутентификации"""
+        data = {
+            'refresh': 'some_token'
+        }
+
+        response = api_client.post(self.url, data, format='json')
+
+        assert response.status_code == 401
+
+
 # ============ Тесты UserViewSet ============
 
 @pytest.mark.django_db
