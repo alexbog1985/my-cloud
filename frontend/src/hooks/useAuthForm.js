@@ -1,7 +1,10 @@
 import { useAuthFormState } from './useAuthFormState';
 import { useAuthSubmit } from './useAuthSubmit';
+import { useDispatch } from 'react-redux';
+import { setErrors, clearErrors } from '../store/slices/authSlice';
 
 export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', validation = true) => {
+  const dispatch = useDispatch();
   const { formData, handleChange, errors, validateForm: validateFormLocal } = useAuthFormState(formFields);
   const handleSubmitRequest = useAuthSubmit(onSuccessRedirectPath);
 
@@ -9,25 +12,30 @@ export const useAuthForm = (formFields, onSuccessRedirectPath = '/files', valida
     e.preventDefault();
 
     if (validation) {
-      const { isValid } = validateFormLocal();
+      const { isValid, errors: validationErrors } = validateFormLocal();
 
       if (!isValid) {
-        // Ошибки уже установлены в useAuthFormState через dispatch
+        dispatch(setErrors(validationErrors));
         return;
       }
     }
 
     try {
       await handleSubmitRequest(apiUrl, formData);
-    } catch (err) {
+    } catch {
       // Ошибки уже обработаны в useAuthSubmit
     }
+  };
+
+  const clearFormErrors = () => {
+    dispatch(clearErrors());
   };
 
   return {
     formData,
     handleChange,
     errors,
-    handleSubmit
+    handleSubmit,
+    clearFormErrors
   };
 };
