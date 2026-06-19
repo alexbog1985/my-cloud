@@ -22,6 +22,7 @@ class FileSerializer(serializers.ModelSerializer):
             'user',
             'special_link',
             'last_download_at',
+            'file',
         ]
 
 class PublicFileSerializer(serializers.ModelSerializer):
