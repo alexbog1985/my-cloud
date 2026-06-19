@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'django_vite',
 
     'users',
     'files',
@@ -64,7 +65,7 @@ ROOT_URLCONF = 'mycloud.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR],
+        'DIRS': [BASE_DIR, BASE_DIR.parent / 'frontend' / 'dist'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -132,8 +133,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR.parent / 'staticfiles'
+
+STATICFILES_DIRS = [
+    BASE_DIR.parent / 'frontend' / 'dist',
+]
+
+# django-vite
+DJANGO_VITE = {
+    'default': {
+        'dev_mode': False,
+        'manifest_path': BASE_DIR.parent / 'frontend' / 'dist' / '.vite' / 'manifest.json',
+    }
+}
 
 # Media files
 MEDIA_URL = '/media/'
