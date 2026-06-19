@@ -65,7 +65,7 @@ ROOT_URLCONF = 'mycloud.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR, BASE_DIR.parent / 'frontend' / 'dist'],
+        'DIRS': [BASE_DIR, BASE_DIR.parent / 'staticfiles'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
