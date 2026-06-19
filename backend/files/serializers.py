@@ -27,6 +27,7 @@ class FileSerializer(serializers.ModelSerializer):
             "special_link",
             "last_download_at",
         ]
+
     def to_representation(self, instance):
         """После создания возвращаем поле file как URL"""
         ret = super().to_representation(instance)
