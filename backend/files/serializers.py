@@ -1,10 +1,11 @@
 from rest_framework import serializers
 
 from .models import File
+from .validators import validate_file
 
 
 class FileSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(required=True, write_only=True)
+    file = serializers.FileField(required=True, write_only=True, validators=[validate_file])
 
     class Meta:
         model = File
