@@ -83,9 +83,6 @@ WSGI_APPLICATION = 'mycloud.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
     'default': {
         'ENGINE': env_config('DB_ENGINE'),
         'NAME': env_config('DB_NAME'),
@@ -165,7 +162,6 @@ if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
 
 # logging configuration
-# настройка логирования в соответствии с требованиями task.md
 # все события сервера должны логироваться путём вывода на консоль сообщений «debug», «info», «warning», «error" с указанием даты и времени
 LOGGING = {
     'version': 1,
