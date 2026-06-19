@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import viewsets, status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -7,58 +7,83 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
+from users.serializers import (LoginSerializer, RegisterSerializer,
+                               UserSerializer)
 
 User = get_user_model()
+
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=["get"], url_path="me")
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'], url_path='all')
+    @action(detail=False, methods=["get"], url_path="all")
     def list_all(self, request):
         if not request.user.is_admin:
-            return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Недостаточно прав"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         users = User.objects.all()
         serializer = self.get_serializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['delete'], url_path='delete')
+    @action(detail=True, methods=["delete"], url_path="delete")
     def delete_user(self, request, pk=None):
         try:
             user = User.objects.get(pk=pk)
             # Проверка: нельзя удалять самого себя
             if user == request.user:
-                return Response({"error": "Нельзя удалить самого себя"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Нельзя удалить самого себя"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             # Проверка прав только для операций над другими пользователями
             if not request.user.is_admin:
-                return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"error": "Недостаточно прав"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             user.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
-            return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Пользователь не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    @action(detail=True, methods=['put'], url_path='toggle-admin')
+    @action(detail=True, methods=["put"], url_path="toggle-admin")
     def toggle_admin(self, request, pk=None):
         try:
             user = User.objects.get(pk=pk)
             # Проверка: нельзя менять свои права
             if user == request.user:
-                return Response({"error": "Нельзя изменить свои права"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Нельзя изменить свои права"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             # Проверка прав только для операций над другими пользователями
             if not request.user.is_admin:
-                return Response({"error": "Недостаточно прав"}, status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"error": "Недостаточно прав"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             user.is_admin = not user.is_admin
             user.save()
-            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(
+                UserSerializer(user).data, status=status.HTTP_200_OK
+            )
         except User.DoesNotExist:
-            return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Пользователь не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class RegisterView(APIView):
@@ -68,12 +93,16 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Возвращаем токены и данные пользователя в стандартизированном формате
-            return Response({
-                'access': user.access_token,
-                'refresh': user.refresh_token,
-                'user': UserSerializer(user).data
-            }, status=status.HTTP_201_CREATED)
+            # Возвращаем токены и данные пользователя
+            # в стандартизированном формате
+            return Response(
+                {
+                    "access": user.access_token,
+                    "refresh": user.refresh_token,
+                    "user": UserSerializer(user).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -86,7 +115,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data['refresh']
+            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)

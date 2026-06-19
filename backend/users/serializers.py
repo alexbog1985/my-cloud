@@ -7,6 +7,7 @@
 
 Использует Django REST Framework и JWT (JSON Web Tokens) для аутентификации.
 """
+
 from django.contrib.auth.password_validation import validate_password
 from django.db import models
 from rest_framework import serializers
@@ -33,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     Поля date_joined и storage_path доступны только для чтения.
     """
+
     full_name = serializers.SerializerMethodField()
     file_count = serializers.SerializerMethodField()
     storage_size = serializers.SerializerMethodField()
@@ -40,17 +42,17 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id',
-            'username',
-            'full_name',
-            'email',
-            'is_admin',
-            'storage_path',
-            'date_joined',
-            'file_count',
-            'storage_size',
+            "id",
+            "username",
+            "full_name",
+            "email",
+            "is_admin",
+            "storage_path",
+            "date_joined",
+            "file_count",
+            "storage_size",
         )
-        read_only_fields = ('date_joined', 'storage_path')
+        read_only_fields = ("date_joined", "storage_path")
 
     def get_full_name(self, obj):
         """Возвращает полное имя пользователя
@@ -103,12 +105,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     Returns:
         User: Объект пользователя с добавленными токенами access и refresh
     """
+
     password = serializers.CharField(write_only=True, validators=[validate_password])
     username = serializers.CharField(validators=[validate_username])
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password')
+        fields = ("username", "first_name", "last_name", "email", "password")
 
     def create(self, validated_data):
         """Создает нового пользователя с захэшированным паролем и токенами
@@ -119,12 +122,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         Returns:
             User: Созданный пользователь
         """
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
         user = User(
-            username=validated_data['username'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            email=validated_data['email'],
+            username=validated_data["username"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            email=validated_data["email"],
         )
         user.set_password(password)
         user.save()
@@ -146,12 +149,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             dict: Словарь с данными пользователя и токенами
         """
         return {
-            'username': instance.username,
-            'first_name': instance.first_name,
-            'last_name': instance.last_name,
-            'email': instance.email,
-            'access': instance.access_token,
-            'refresh': instance.refresh_token
+            "username": instance.username,
+            "first_name": instance.first_name,
+            "last_name": instance.last_name,
+            "email": instance.email,
+            "access": instance.access_token,
+            "refresh": instance.refresh_token,
         }
 
 
@@ -166,6 +169,7 @@ class LoginSerializer(TokenObtainPairSerializer):
     Raises:
         AuthenticationFailed: Если учетные данные неверны
     """
+
     def validate(self, attrs):
         """Проводит валидацию и возвращает токены с данными пользователя
 
@@ -179,7 +183,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             AuthenticationFailed: Если учетные данные неверны
         """
         data = super().validate(attrs)
-        data['user'] = UserSerializer(self.user).data
+        data["user"] = UserSerializer(self.user).data
 
         return data
 
@@ -194,5 +198,5 @@ class LoginSerializer(TokenObtainPairSerializer):
             RefreshToken: JWT токен с дополнительным полем username
         """
         token = super().get_token(user)
-        token['username'] = user.username
+        token["username"] = user.username
         return token

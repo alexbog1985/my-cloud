@@ -6,9 +6,9 @@
 - UserFactory: создает обычных пользователей
 - AdminUserFactory: создает администраторов
 """
+
 import factory
 from django.contrib.auth import get_user_model
-
 
 User = get_user_model()
 
@@ -26,15 +26,16 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     Пароль автоматически хэшируется через set_password().
     """
+
     class Meta:
         model = User
-        django_get_or_create = ('username',)
+        django_get_or_create = ("username",)
 
-    username = factory.Faker('user_name')
-    email = factory.Faker('email')
-    first_name = factory.Faker('first_name')
-    last_name = factory.Faker('last_name')
-    password = 'TestPass123!'
+    username = factory.Faker("user_name")
+    email = factory.Faker("email")
+    first_name = factory.Faker("first_name")
+    last_name = factory.Faker("last_name")
+    password = "TestPass123!"
     is_admin = False
 
     @classmethod
@@ -55,7 +56,7 @@ class UserFactory(factory.django.DjangoModelFactory):
         """
         manager = cls._get_manager(model_class)
         # Извлекаем пароль из kwargs
-        password = kwargs.pop('password', cls.password)
+        password = kwargs.pop("password", cls.password)
         # Создаем пользователя с незахэшированным паролем
         user = manager.create_user(*args, **kwargs)
         # Устанавливаем захэшированный пароль
@@ -73,15 +74,16 @@ class AdminUserFactory(factory.django.DjangoModelFactory):
     Args:
         factory: Базовый класс DjangoModelFactory
     """
+
     class Meta:
         model = User
-        django_get_or_create = ('username',)
+        django_get_or_create = ("username",)
 
-    username = factory.Faker('user_name')
-    email = factory.Faker('email')
-    first_name = factory.Faker('first_name')
-    last_name = factory.Faker('last_name')
-    password = 'AdminPass123!'
+    username = factory.Faker("user_name")
+    email = factory.Faker("email")
+    first_name = factory.Faker("first_name")
+    last_name = factory.Faker("last_name")
+    password = "AdminPass123!"
     is_admin = True
 
     @classmethod
@@ -98,7 +100,7 @@ class AdminUserFactory(factory.django.DjangoModelFactory):
         """
         manager = cls._get_manager(model_class)
         # Извлекаем пароль из kwargs
-        password = kwargs.pop('password', cls.password)
+        password = kwargs.pop("password", cls.password)
         # Создаем пользователя с незахэшированным паролем
         user = manager.create_user(*args, **kwargs)
         # Устанавливаем захэшированный пароль

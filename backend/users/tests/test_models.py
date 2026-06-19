@@ -5,6 +5,7 @@
 - get_full_name() - полное имя (составное)
 - __str__() - строковое представление
 """
+
 import pytest
 
 from users.factories import UserFactory
@@ -33,7 +34,7 @@ class TestUserModel:
         """
         user = UserFactory.create()
 
-        expected_path = f'storage/{user.username}'
+        expected_path = f"storage/{user.username}"
         assert user.storage_path == expected_path
 
     def test_save_preserves_storage_path(self):
@@ -43,7 +44,7 @@ class TestUserModel:
         Ожидание: при создании пользователя с явно указанным storage_path,
         он не будет перезаписан
         """
-        custom_path = 'custom/storage/path'
+        custom_path = "custom/storage/path"
         user = UserFactory.create(storage_path=custom_path)
 
         assert user.storage_path == custom_path
@@ -54,9 +55,9 @@ class TestUserModel:
 
         Ожидание: метод возвращает строку 'имя фамилия'
         """
-        user = UserFactory.create(first_name='John', last_name='Doe')
+        user = UserFactory.create(first_name="John", last_name="Doe")
 
-        expected_full_name = 'John Doe'
+        expected_full_name = "John Doe"
         assert user.get_full_name() == expected_full_name
 
     def test_str_representation(self):
@@ -66,9 +67,11 @@ class TestUserModel:
         Ожидание: __str__() возвращает строку в формате
         'username (полное имя)'
         """
-        user = UserFactory.create(username='testuser', first_name='Test', last_name='User')
+        user = UserFactory.create(
+            username="testuser", first_name="Test", last_name="User"
+        )
 
-        expected_str = 'testuser (Test User)'
+        expected_str = "testuser (Test User)"
         assert str(user) == expected_str
 
     def test_user_str_format(self):
@@ -77,12 +80,14 @@ class TestUserModel:
 
         Ожидание: формат строки соответствует ожидаемому шаблону
         """
-        user = UserFactory.create(username='alex123', first_name='Alex', last_name='Smith')
+        user = UserFactory.create(
+            username="alex123", first_name="Alex", last_name="Smith"
+        )
 
         result = str(user)
         assert result.startswith(user.username)
-        assert '(' in result
-        assert ')' in result
+        assert "(" in result
+        assert ")" in result
 
     def test_storage_path_is_unique(self):
         """
@@ -90,8 +95,8 @@ class TestUserModel:
 
         Ожидание: storage_path должен быть уникальным для каждого пользователя
         """
-        user1 = UserFactory.create(username='user1')
-        user2 = UserFactory.create(username='user2')
+        user1 = UserFactory.create(username="user1")
+        user2 = UserFactory.create(username="user2")
 
         assert user1.storage_path != user2.storage_path
 
@@ -136,9 +141,9 @@ class TestUserModel:
         user = UserFactory.build()
 
         # Проверяем, что email - это EMAIL_FIELD
-        assert user.EMAIL_FIELD == 'email'
+        assert user.EMAIL_FIELD == "email"
 
         # Проверяем, что REQUIRED_FIELDS содержит необходимые поля
-        assert 'email' in User.REQUIRED_FIELDS
-        assert 'first_name' in User.REQUIRED_FIELDS
-        assert 'last_name' in User.REQUIRED_FIELDS
+        assert "email" in User.REQUIRED_FIELDS
+        assert "first_name" in User.REQUIRED_FIELDS
+        assert "last_name" in User.REQUIRED_FIELDS

@@ -7,6 +7,7 @@
 - generate_special_link() - создание уникальной ссылки
 - __str__() - строковое представление
 """
+
 import pytest
 
 from files.factories import FileFactory
@@ -47,7 +48,7 @@ class TestFileModel:
         Ожидание: при создании файла с явно указанной special_link,
         она не будет перезаписана
         """
-        custom_link = 'A' * 32
+        custom_link = "A" * 32
         file = FileFactory.create(special_link=custom_link)
 
         assert file.special_link == custom_link
@@ -68,10 +69,11 @@ class TestFileModel:
         assert file.original_name is not None
         assert len(file.original_name) > 0
         # Проверяем, что оригинальное имя начинается с 'test_file_' и имеет расширение .txt
-        assert file.original_name.startswith('test_file_')
-        assert file.original_name.endswith('.txt')
+        assert file.original_name.startswith("test_file_")
+        assert file.original_name.endswith(".txt")
         # original_name не должен совпадать с именем на диске (upload_to() переименовал)
         import os
+
         assert file.original_name != os.path.basename(file.file.name)
 
     def test_save_sets_file_size(self):
@@ -92,7 +94,7 @@ class TestFileModel:
         Ожидание: при создании файла с явно указанным original_name,
         он не будет перезаписан
         """
-        custom_name = 'my_custom_file.txt'
+        custom_name = "my_custom_file.txt"
         file = FileFactory.create(original_name=custom_name)
 
         assert file.original_name == custom_name
@@ -125,7 +127,7 @@ class TestFileModel:
         Ожидание: __str__() возвращает строку в формате
         'original_name (username)'
         """
-        file = FileFactory.create(original_name='test.txt')
+        file = FileFactory.create(original_name="test.txt")
 
         expected_str = f"test.txt ({file.user.username})"
         assert str(file) == expected_str

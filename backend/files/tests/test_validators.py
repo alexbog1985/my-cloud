@@ -8,18 +8,14 @@
 
 Использует фабрику FileFactory для создания файлов
 """
+
 import pytest
 from django.core.exceptions import ValidationError
 
 from files.factories import FileFactory
-from files.validators import (
-    validate_file_size,
-    validate_file_extension,
-    validate_file_content_type,
-    validate_file,
-    MAX_FILE_SIZE,
-    ALLOWED_EXTENSIONS,
-)
+from files.validators import (ALLOWED_EXTENSIONS, MAX_FILE_SIZE, validate_file,
+                              validate_file_content_type,
+                              validate_file_extension, validate_file_size)
 
 
 @pytest.mark.django_db
@@ -33,6 +29,7 @@ class TestFileValidator:
 
 
 # ============ Тесты validate_file_size ============
+
 
 @pytest.mark.django_db
 class TestValidateFileSize:
@@ -55,11 +52,12 @@ class TestValidateFileSize:
         Ожидание: файл размером ровно 100 МБ проходит валидацию
         """
         from django.core.files.base import ContentFile
+
         # Создаем файл ровно 100 МБ
-        max_size_content = ContentFile(b'x' * MAX_FILE_SIZE, name='max_size.txt')
+        max_size_content = ContentFile(b"x" * MAX_FILE_SIZE, name="max_size.txt")
         file = FileFactory.create()
-        file.file.save('max_size.txt', max_size_content, save=False)
-        
+        file.file.save("max_size.txt", max_size_content, save=False)
+
         result = validate_file_size(file.file)
         assert result == file.file
 
@@ -70,20 +68,22 @@ class TestValidateFileSize:
         Ожидание: выбрасывается ValidationError с сообщением о превышении размера
         """
         from django.core.files.base import ContentFile
+
         # Создаем файл размером 101 МБ
-        large_content = ContentFile(b'x' * (MAX_FILE_SIZE + 1), name='large.txt')
+        large_content = ContentFile(b"x" * (MAX_FILE_SIZE + 1), name="large.txt")
         file = FileFactory.create()
-        file.file.save('large.txt', large_content, save=False)
-        
+        file.file.save("large.txt", large_content, save=False)
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file_size(file.file)
 
         error_message = str(exc_info.value)
-        assert 'не должен превышать' in error_message
-        assert '100 МБ' in error_message
+        assert "не должен превышать" in error_message
+        assert "100 МБ" in error_message
 
 
 # ============ Тесты validate_file_extension ============
+
 
 @pytest.mark.django_db
 class TestValidateFileExtension:
@@ -105,7 +105,7 @@ class TestValidateFileExtension:
 
         Ожидание: валидация проходит успешно
         """
-        file = FileFactory.create(original_name='document.pdf')
+        file = FileFactory.create(original_name="document.pdf")
         result = validate_file_extension(file.file)
         assert result == file.file
 
@@ -115,7 +115,7 @@ class TestValidateFileExtension:
 
         Ожидание: расширение нормализуется и валидация проходит
         """
-        file = FileFactory.create(original_name='document.PDF')
+        file = FileFactory.create(original_name="document.PDF")
         result = validate_file_extension(file.file)
         assert result == file.file
 
@@ -125,7 +125,7 @@ class TestValidateFileExtension:
 
         Ожидание: расширение нормализуется и валидация проходит
         """
-        file = FileFactory.create(original_name='document.PdF')
+        file = FileFactory.create(original_name="document.PdF")
         result = validate_file_extension(file.file)
         assert result == file.file
 
@@ -135,13 +135,13 @@ class TestValidateFileExtension:
 
         Ожидание: выбрасывается ValidationError с сообщением о недопустимом расширении
         """
-        file = FileFactory.create(original_name='script.exe')
-        
+        file = FileFactory.create(original_name="script.exe")
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file_extension(file.file)
 
         error_message = str(exc_info.value)
-        assert 'Недопустимое расширение' in error_message
+        assert "Недопустимое расширение" in error_message
 
     def test_validate_disallowed_extension_unknown(self):
         """
@@ -149,13 +149,13 @@ class TestValidateFileExtension:
 
         Ожидание: выбрасывается ValidationError
         """
-        file = FileFactory.create(original_name='file.xyz')
-        
+        file = FileFactory.create(original_name="file.xyz")
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file_extension(file.file)
 
         error_message = str(exc_info.value)
-        assert 'Недопустимое расширение' in error_message
+        assert "Недопустимое расширение" in error_message
 
     def test_validate_file_without_extension(self):
         """
@@ -163,13 +163,16 @@ class TestValidateFileExtension:
 
         Ожидание: выбрасывается ValidationError с сообщением о необходимости расширения
         """
-        file = FileFactory.create(original_name='noextension')
-        
+        file = FileFactory.create(original_name="noextension")
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file_extension(file.file)
 
         error_message = str(exc_info.value)
-        assert 'Файл должен иметь расширение' in error_message or 'Недопустимое расширение' in error_message
+        assert (
+            "Файл должен иметь расширение" in error_message
+            or "Недопустимое расширение" in error_message
+        )
 
     def test_validate_all_allowed_extensions(self):
         """
@@ -178,12 +181,13 @@ class TestValidateFileExtension:
         Ожидание: все файлы проходят валидацию
         """
         for ext in ALLOWED_EXTENSIONS:
-            file = FileFactory.create(original_name=f'test.{ext}')
+            file = FileFactory.create(original_name=f"test.{ext}")
             result = validate_file_extension(file.file)
             assert result == file.file
 
 
 # ============ Тесты validate_file_content_type ============
+
 
 @pytest.mark.django_db
 class TestValidateFileContentType:
@@ -205,7 +209,7 @@ class TestValidateFileContentType:
 
         Ожидание: валидация проходит успешно
         """
-        file = FileFactory.create(original_name='document.pdf')
+        file = FileFactory.create(original_name="document.pdf")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
@@ -215,7 +219,7 @@ class TestValidateFileContentType:
 
         Ожидание: файл с расширением .png проходит валидацию
         """
-        file = FileFactory.create(original_name='image.png')
+        file = FileFactory.create(original_name="image.png")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
@@ -225,7 +229,7 @@ class TestValidateFileContentType:
 
         Ожидание: файл с расширением .mp3 проходит валидацию
         """
-        file = FileFactory.create(original_name='audio.mp3')
+        file = FileFactory.create(original_name="audio.mp3")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
@@ -235,7 +239,7 @@ class TestValidateFileContentType:
 
         Ожидание: файл с расширением .mp4 проходит валидацию
         """
-        file = FileFactory.create(original_name='video.mp4')
+        file = FileFactory.create(original_name="video.mp4")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
@@ -245,7 +249,7 @@ class TestValidateFileContentType:
 
         Ожидание: файл с расширением .zip проходит валидацию
         """
-        file = FileFactory.create(original_name='archive.zip')
+        file = FileFactory.create(original_name="archive.zip")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
@@ -255,12 +259,13 @@ class TestValidateFileContentType:
 
         Ожидание: файл с расширением .json проходит валидацию
         """
-        file = FileFactory.create(original_name='data.json')
+        file = FileFactory.create(original_name="data.json")
         result = validate_file_content_type(file.file)
         assert result == file.file
 
 
 # ============ Тесты validate_file (комплексная проверка) ============
+
 
 @pytest.mark.django_db
 class TestValidateFile:
@@ -282,7 +287,7 @@ class TestValidateFile:
 
         Ожидание: файл проходит все проверки
         """
-        file = FileFactory.create(original_name='document.pdf')
+        file = FileFactory.create(original_name="document.pdf")
         result = validate_file(file.file)
         assert result == file.file
 
@@ -292,14 +297,14 @@ class TestValidateFile:
 
         Ожидание: выбрасывается ValidationError
         """
-        file = FileFactory.create(original_name='script.exe')
-        
+        file = FileFactory.create(original_name="script.exe")
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file(file.file)
 
         # Должен пройти проверку размера, но не расширения
         error_message = str(exc_info.value)
-        assert 'Недопустимое расширение' in error_message
+        assert "Недопустимое расширение" in error_message
 
     def test_validate_invalid_size(self):
         """
@@ -308,20 +313,22 @@ class TestValidateFile:
         Ожидание: выбрасывается ValidationError
         """
         from django.core.files.base import ContentFile
+
         # Создаем файл размером 101 МБ
-        large_content = ContentFile(b'x' * (MAX_FILE_SIZE + 1), name='large.txt')
-        file = FileFactory.create(original_name='large.txt')
-        file.file.save('large.txt', large_content, save=False)
-        
+        large_content = ContentFile(b"x" * (MAX_FILE_SIZE + 1), name="large.txt")
+        file = FileFactory.create(original_name="large.txt")
+        file.file.save("large.txt", large_content, save=False)
+
         with pytest.raises(ValidationError) as exc_info:
             validate_file(file.file)
 
         # Должен пройти проверку расширения, но не размера
         error_message = str(exc_info.value)
-        assert 'не должен превышать' in error_message
+        assert "не должен превышать" in error_message
 
 
 # ============ Тесты граничных случаев ============
+
 
 @pytest.mark.django_db
 class TestEdgeCases:
@@ -333,7 +340,7 @@ class TestEdgeCases:
 
         Ожидание: пустой файл проходит валидацию (если расширение валидно)
         """
-        file = FileFactory.create(original_name='empty.txt')
+        file = FileFactory.create(original_name="empty.txt")
         result = validate_file(file.file)
         assert result == file.file
 
@@ -343,7 +350,7 @@ class TestEdgeCases:
 
         Ожидание: файл проходит валидацию (проверяется только расширение)
         """
-        file = FileFactory.create(original_name='file-with_special.chars_123.pdf')
+        file = FileFactory.create(original_name="file-with_special.chars_123.pdf")
         result = validate_file(file.file)
         assert result == file.file
 
@@ -354,6 +361,6 @@ class TestEdgeCases:
         Ожидание: валидация проходит, если расширение в списке разрешенных
         """
         # .yaml - разрешенное расширение
-        file = FileFactory.create(original_name='config.txt')
+        file = FileFactory.create(original_name="config.txt")
         result = validate_file(file.file)
         assert result == file.file
