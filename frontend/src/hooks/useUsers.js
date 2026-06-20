@@ -17,7 +17,7 @@ export const useUsers = () => {
   const fetchUsers = useCallback(async () => {
     dispatch(setLoading());
     try {
-      const response = await request({ url: "/users/all", method: "GET" });
+      const response = await request({ url: "/users/all/", method: "GET" });
       dispatch(setUsers(response.data));
     } catch (err) {
       error(err.response?.data?.error || 'Ошибка загрузки пользователей');
