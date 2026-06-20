@@ -15,6 +15,9 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if not self.storage_path:
             self.storage_path = f"storage/{self.username}"
+        # Автоматически устанавливаем is_admin = True для суперпользователей
+        if self.is_superuser and not self.is_admin:
+            self.is_admin = True
         super().save(*args, **kwargs)
 
     def __str__(self):
