@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useFiles } from "../hooks/useFiles";
-import {useSelector} from "react-redux";
 
 export default function FileDownloadPage() {
   const { specialLink } = useParams();

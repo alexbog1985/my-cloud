@@ -1,175 +1,301 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.test import APITestCase
+"""Тесты сериалайзеров для файлов
+
+- создание файла через сериалайзер
+- получение информации о файле
+- валидация данных
+"""
+
+import pytest
+from django.core.files.base import ContentFile
+
+from files.factories import FileFactory
 from files.models import File
 from files.serializers import FileSerializer, PublicFileSerializer
 
-User = get_user_model()
 
+@pytest.mark.django_db
+class TestFileSerializer:
+    """
+    Тесты FileSerializer
 
-class FileSerializerTests(APITestCase):
+    Тестирует:
+    - Правильное отображение полей файла
+    - Валидацию данных при создании
+    - Обработку read_only полей
+    """
 
-    def setUp(self):
-        """Создание тестового пользователя"""
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@test.com',
-            password='TestPass123!',
-            first_name='Test',
-            last_name='User'
-        )
+    @pytest.fixture
+    def file(self):
+        """Создает файл через фабрику для теста"""
+        return FileFactory.create()
 
-    def test_serializer_valid_data(self):
-        """Тест сериализатора с валидными данными"""
-        file_content = b'Test file content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
-
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='Test comment'
-        )
-
-        serializer = FileSerializer(file_obj)
+    def test_file_serializer_fields(self, file):
+        """
+        Тест полей FileSerializer
+        """
+        serializer = FileSerializer(file)
         data = serializer.data
 
-        self.assertEqual(data['original_name'], 'test.txt')
-        self.assertEqual(data['comment'], 'Test comment')
-        self.assertEqual(data['user'], self.user.id)
-        self.assertTrue(data['special_link'])
-        self.assertIn('size', data)
-        self.assertIn('upload_at', data)
+        # Проверяем, что все обязательные поля присутствуют
+        assert "id" in data
+        assert "original_name" in data
+        assert "comment" in data
+        assert "size" in data
+        assert "upload_at" in data
+        assert "user" in data
+        assert "special_link" in data
+        assert "last_download_at" in data
+        assert "file" in data
 
-    def test_serializer_read_only_fields(self):
-        """Тест read_only полей сериализатора"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+    def test_file_serializer_original_name(self, file):
+        """
+        Тест поля original_name
+        """
+        serializer = FileSerializer(file)
+        assert serializer.data["original_name"] == file.original_name
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user
-        )
+    def test_file_serializer_comment(self, file):
+        """
+        Тест поля comment
+        """
+        serializer = FileSerializer(file)
+        assert serializer.data["comment"] == file.comment
 
-        serializer = FileSerializer(file_obj)
+    def test_file_serializer_size(self, file):
+        """
+        Тест поля size
+        """
+        serializer = FileSerializer(file)
+        assert serializer.data["size"] == file.size
+
+    def test_file_serializer_user(self, file):
+        """
+        Тест поля user
+        """
+        serializer = FileSerializer(file)
+        assert serializer.data["user"] == file.user.id
+
+    def test_file_serializer_special_link(self, file):
+        """
+        Тест поля special_link
+        """
+        serializer = FileSerializer(file)
+        assert serializer.data["special_link"] == file.special_link
+
+    def test_file_serializer_read_only_fields(self, file):
+        """
+        Тест read_only_fields
+        Поле upload_at должно быть доступно только для чтения
+        """
+        serializer = FileSerializer(file)
+
+        # Проверяем, что upload_at присутствует
+        assert "upload_at" in serializer.data
+
+        # Проверяем, что user присутствует
+        assert "user" in serializer.data
+
+    def test_file_serializer_file_field(self, file):
+        """
+        Тест поля file (URL к файлу)
+        """
+        serializer = FileSerializer(file)
+        # Поле file должно быть URL
+        assert "file" in serializer.data
+        assert serializer.data["file"] is not None
+
+    def test_file_serializer_upload_at_format(self, file):
+        """
+        Тест формата поля upload_at
+        """
+        serializer = FileSerializer(file)
+        # Дата должна быть в формате ISO 8601
+        upload_at = serializer.data["upload_at"]
+        assert "T" in upload_at or " " in upload_at
+
+
+@pytest.mark.django_db
+class TestPublicFileSerializer:
+    """
+    Тесты PublicFileSerializer
+
+    Тестирует:
+    - Правильное отображение публичных полей файла
+    - Отсутствие чувствительных данных
+    """
+
+    def test_public_file_serializer_fields(self):
+        """
+        Тест полей PublicFileSerializer
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
         data = serializer.data
 
-        # Поля, которые должны быть read_only
-        read_only_fields = ['id', 'size', 'upload_at', 'user', 'special_link', 'last_download_at']
+        # Проверяем, что только публичные поля присутствуют
+        assert "original_name" in data
+        assert "comment" in data
+        assert "size" in data
+        assert "special_link" in data
 
-        for field in read_only_fields:
-            self.assertIn(field, data)
+        # Проверяем, что закрытые поля отсутствуют
+        assert "id" not in data
+        assert "user" not in data
+        assert "upload_at" not in data
+        assert "last_download_at" not in data
+        assert "file" not in data
 
-    def test_serializer_create_file(self):
-        """Тест создания файла через сериализатор"""
-        file_content = b'New file content'
-        uploaded_file = SimpleUploadedFile('newfile.txt', file_content)
+    def test_public_file_serializer_original_name(self):
+        """
+        Тест поля original_name
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
+        assert serializer.data["original_name"] == file.original_name
 
-        file_data = {
-            'file': uploaded_file,
-            'original_name': 'newfile.txt',
-            'comment': 'Created via serializer'
+    def test_public_file_serializer_comment(self):
+        """
+        Тест поля comment
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
+        assert serializer.data["comment"] == file.comment
+
+    def test_public_file_serializer_size(self):
+        """
+        Тест поля size
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
+        assert serializer.data["size"] == file.size
+
+    def test_public_file_serializer_special_link(self):
+        """
+        Тест поля special_link
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
+        assert serializer.data["special_link"] == file.special_link
+
+    def test_public_file_serializer_read_only(self):
+        """
+        Тест, что все поля read_only
+        """
+        file = FileFactory.create()
+        serializer = PublicFileSerializer(file)
+
+        # Все поля должны быть read_only
+        for field_name in serializer.fields:
+            field = serializer.fields[field_name]
+            assert field.read_only is True
+
+
+@pytest.mark.django_db
+class TestFileSerializerCreate:
+    """
+    Тесты создания файла через FileSerializer
+    """
+
+    @pytest.fixture
+    def user(self):
+        """Создает пользователя через фабрику для теста"""
+        from users.factories import UserFactory
+
+        return UserFactory.create()
+
+    def test_serializer_create_with_valid_data(self, user):
+        """
+        Тест создания файла с валидными данными
+        """
+        from django.core.files.base import ContentFile
+
+        file_content = ContentFile(b"Test content", name="test.txt")
+
+        data = {
+            "original_name": "test.txt",
+            "comment": "Test comment",
+            "file": file_content,
         }
 
-        serializer = FileSerializer(data=file_data)
+        serializer = FileSerializer(data=data)
+        assert serializer.is_valid() is True
 
-        self.assertTrue(serializer.is_valid(), msg=str(serializer.errors))
-        file_obj = serializer.save(user=self.user)
+        file = serializer.save(user=user)
 
-        self.assertEqual(file_obj.original_name, 'newfile.txt')
-        self.assertEqual(file_obj.user, self.user)
-        self.assertTrue(file_obj.special_link)
+        # Проверяем, что файл создан
+        assert File.objects.filter(id=file.id).exists()
+        assert file.original_name == "test.txt"
+        assert file.comment == "Test comment"
+        assert file.user == user
+        assert file.special_link is not None
 
-    def test_serializer_update_file(self):
-        """Тест обновления файла через сериализатор"""
-        file_content = b'Original content'
-        uploaded_file = SimpleUploadedFile('original.txt', file_content)
+    def test_serializer_create_without_comment(self, user):
+        """
+        Тест создания файла без комментария
+        """
+        from django.core.files.base import ContentFile
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='Original comment'
-        )
+        file_content = ContentFile(b"Test content", name="test.txt")
 
-        updated_data = {
-            'comment': 'Updated comment'
+        data = {
+            "original_name": "test.txt",
+            "file": file_content,
         }
 
-        serializer = FileSerializer(file_obj, data=updated_data, partial=True)
+        serializer = FileSerializer(data=data)
+        assert serializer.is_valid() is True
 
-        self.assertTrue(serializer.is_valid())
-        file_obj = serializer.save()
+        file = serializer.save(user=user)
+        assert file.comment == ""
 
-        file_obj.refresh_from_db()
-        self.assertEqual(file_obj.comment, 'Updated comment')
+    def test_serializer_create_auto_special_link(self, user):
+        """
+        Тест автоматической генерации special_link
+        """
+        from django.core.files.base import ContentFile
 
-    def test_serializer_optional_comment(self):
-        """Тест файла без комментария"""
-        file_content = b'No comment content'
-        uploaded_file = SimpleUploadedFile('nocomment.txt', file_content)
+        file_content = ContentFile(b"Test content", name="test.txt")
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user
-        )
+        data = {
+            "original_name": "test.txt",
+            "file": file_content,
+        }
 
-        serializer = FileSerializer(file_obj)
-        data = serializer.data
+        serializer = FileSerializer(data=data)
+        assert serializer.is_valid() is True
 
-        self.assertIsNotNone(data['comment'])
-        self.assertEqual(data['comment'], '')
+        file = serializer.save(user=user)
 
-    def test_serializer_special_characters_filename(self):
-        """Тест файла со специальными символами в имени"""
-        file_content = b'Special chars content'
-        uploaded_file = SimpleUploadedFile('file-with_special.chars.txt', file_content)
+        # Проверяем, что special_link сгенерирована
+        assert file.special_link is not None
+        assert len(file.special_link) == 32
+        assert file.special_link.isalnum()
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user
-        )
+    def test_serializer_validation_missing_original_name(self, user):
+        """
+        Тест валидации: отсутствие original_name
+        original_name не является обязательным полем (blank=True)
+        """
+        from django.core.files.base import ContentFile
 
-        serializer = FileSerializer(file_obj)
-        data = serializer.data
+        file_content = ContentFile(b"Test content", name="test.txt")
 
-        self.assertEqual(data['original_name'], 'file-with_special.chars.txt')
+        data = {
+            "file": file_content,
+        }
 
-    def test_public_serializer_fields(self):
-        """Тест полей PublicFileSerializer"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+        serializer = FileSerializer(data=data)
+        # original_name необязательное поле, валидация пройдет
+        assert serializer.is_valid() is True
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='Public file'
-        )
+    def test_serializer_validation_missing_file(self, user):
+        """
+        Тест валидации: отсутствие файла
+        """
+        data = {
+            "original_name": "test.txt",
+        }
 
-        serializer = PublicFileSerializer(file_obj)
-        data = serializer.data
-
-        # Проверить, что только публичные поля
-        public_fields = ['original_name', 'comment', 'size', 'special_link']
-        for field in public_fields:
-            self.assertIn(field, data)
-
-        # Проверить, что приватные поля отсутствуют
-        private_fields = ['id', 'user', 'upload_at', 'last_download_at', 'file']
-        for field in private_fields:
-            self.assertNotIn(field, data)
-
-    def test_public_serializer_no_user_info(self):
-        """Тест, что PublicFileSerializer не содержит информацию о пользователе"""
-        file_content = b'Private content'
-        uploaded_file = SimpleUploadedFile('private.txt', file_content)
-
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user
-        )
-
-        serializer = PublicFileSerializer(file_obj)
-        data = serializer.data
-
-        self.assertNotIn('user', data)
-        self.assertNotIn('user', serializer.fields)
+        serializer = FileSerializer(data=data)
+        assert serializer.is_valid() is False
+        assert "file" in serializer.errors

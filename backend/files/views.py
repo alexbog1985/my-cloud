@@ -1,15 +1,15 @@
-from django.utils import timezone
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, Http404
-from rest_framework import viewsets, status, permissions
+from django.utils import timezone
+from django.utils.encoding import escape_uri_path
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils.encoding import escape_uri_path
 
 from .models import File
-from .serializers import FileSerializer, PublicFileSerializer
 from .permissions import IsOwnerOrAdmin
+from .serializers import FileSerializer, PublicFileSerializer
 
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -18,7 +18,7 @@ class FileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_admin:
-            user_id = self.request.query_params.get('user')
+            user_id = self.request.query_params.get("user")
             if user_id:
                 return File.objects.filter(user=user_id)
             return File.objects.all()
@@ -36,11 +36,11 @@ class FileViewSet(viewsets.ModelViewSet):
         instance.file.delete(save=False)
         instance.delete()
 
-    @action(detail=True, methods=['get'], url_path='download')
+    @action(detail=True, methods=["get"], url_path="download")
     def download(self, request, pk=None):
         file_obj = self.get_object()  # использует get_queryset и разрешения
 
-        if request.query_params.get('info') == 'true':
+        if request.query_params.get("info") == "true":
             serializer = FileSerializer(file_obj)
             return Response(serializer.data)
 
@@ -48,12 +48,14 @@ class FileViewSet(viewsets.ModelViewSet):
         file_obj.save()
 
         try:
-            file_obj.file.open('rb')
+            file_obj.file.open("rb")
         except Exception:
-            raise Http404('Файла не существует')
+            raise Http404("Файла не существует")
 
-        response = HttpResponse(file_obj.file, content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+        response = HttpResponse(file_obj.file, content_type="application/octet-stream")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+        )
         return response
 
 
@@ -63,7 +65,7 @@ class FileDownloadByLinkView(APIView):
     def get(self, request, special_link):
         file_obj = get_object_or_404(File, special_link=special_link)
 
-        if request.query_params.get('info') == 'true':
+        if request.query_params.get("info") == "true":
             serializer = PublicFileSerializer(file_obj)
             return Response(serializer.data)
 
@@ -71,11 +73,13 @@ class FileDownloadByLinkView(APIView):
         file_obj.save()
 
         try:
-            file_obj.file.open('rb')
+            file_obj.file.open("rb")
         except Exception:
-            raise Http404('Файла не существует')
+            raise Http404("Файла не существует")
 
-        response = HttpResponse(file_obj.file, content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+        response = HttpResponse(file_obj.file, content_type="application/octet-stream")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{escape_uri_path(file_obj.original_name)}"'
+        )
 
         return response

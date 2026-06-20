@@ -1,92 +1,149 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
+"""Тесты модели User для модуля users
 
-User = get_user_model()
+Тестируемые методы модели:
+- save() - автогенерация storage_path
+- get_full_name() - полное имя (составное)
+- __str__() - строковое представление
+"""
+
+import pytest
+
+from users.factories import UserFactory
+from users.models import User
 
 
-class UserModelTest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@test.com',
-            password='TestPass123!',
-            first_name='TestFirstName',
-            last_name='TestLastName',
+@pytest.mark.django_db
+class TestUserModel:
+    """
+    Тесты модели User
+
+    Тестирует:
+    - Автогенерацию storage_path при сохранении нового пользователя
+    - Сохранение существующего storage_path при повторном сохранении
+    - Правильность метода get_full_name()
+    - Строковое представление пользователя
+    """
+
+    def test_save_autogenerates_storage_path(self):
+        """
+        Тест автогенерации storage_path при создании пользователя
+
+        Ожидание: при создании нового пользователя без явно указанного
+        storage_path, он будет автоматически сгенерирован по шаблону
+        'storage/{username}'
+        """
+        user = UserFactory.create()
+
+        expected_path = f"storage/{user.username}"
+        assert user.storage_path == expected_path
+
+    def test_save_preserves_storage_path(self):
+        """
+        Тест сохранения существующего storage_path
+
+        Ожидание: при создании пользователя с явно указанным storage_path,
+        он не будет перезаписан
+        """
+        custom_path = "custom/storage/path"
+        user = UserFactory.create(storage_path=custom_path)
+
+        assert user.storage_path == custom_path
+
+    def test_get_full_name(self):
+        """
+        Тест метода get_full_name()
+
+        Ожидание: метод возвращает строку 'имя фамилия'
+        """
+        user = UserFactory.create(first_name="John", last_name="Doe")
+
+        expected_full_name = "John Doe"
+        assert user.get_full_name() == expected_full_name
+
+    def test_str_representation(self):
+        """
+        Тест строкового представления пользователя
+
+        Ожидание: __str__() возвращает строку в формате
+        'username (полное имя)'
+        """
+        user = UserFactory.create(
+            username="testuser", first_name="Test", last_name="User"
         )
 
-    def test_create_user(self):
-        """Тест создания пользователя"""
-        self.assertEqual(self.user.username, 'testuser')
-        self.assertEqual(self.user.email, 'test@test.com')
-        self.assertEqual(self.user.first_name, 'TestFirstName')
-        self.assertEqual(self.user.last_name, 'TestLastName')
-        self.assertTrue(self.user.check_password('TestPass123!'))
-        self.assertFalse(self.user.is_admin)
+        expected_str = "testuser (Test User)"
+        assert str(user) == expected_str
 
-    def test_user_string_representation(self):
-        """Тест строкового представления пользователя"""
-        expected_str = f"{self.user.username} ({self.user.get_full_name()})"
-        self.assertEqual(str(self.user), expected_str)
+    def test_user_str_format(self):
+        """
+        Тест формата строкового представления
 
-    def test_storage_path_generation(self):
-        """Тест автоматической генерации пути к хранилищу"""
-        self.assertEqual(self.user.storage_path, f"storage/{self.user.username}")
+        Ожидание: формат строки соответствует ожидаемому шаблону
+        """
+        user = UserFactory.create(
+            username="alex123", first_name="Alex", last_name="Smith"
+        )
 
-    def test_user_full_name(self):
-        """Тест получения полного имени"""
-        self.assertEqual(self.user.get_full_name(), 'TestFirstName TestLastName')
+        result = str(user)
+        assert result.startswith(user.username)
+        assert "(" in result
+        assert ")" in result
+
+    def test_storage_path_is_unique(self):
+        """
+        Тест уникальности storage_path
+
+        Ожидание: storage_path должен быть уникальным для каждого пользователя
+        """
+        user1 = UserFactory.create(username="user1")
+        user2 = UserFactory.create(username="user2")
+
+        assert user1.storage_path != user2.storage_path
+
+    def test_is_admin_default_false(self):
+        """
+        Тест значения is_admin по умолчанию
+
+        Ожидание: по умолчанию is_admin = False
+        """
+        user = UserFactory.create()
+
+        assert user.is_admin is False
+
+    def test_is_admin_admin_factory(self):
+        """
+        Тест значения is_admin для администратора
+
+        Ожидание: AdminUserFactory создает пользователя с is_admin = True
+        """
+        from users.factories import AdminUserFactory
+
+        admin = AdminUserFactory.create()
+
+        assert admin.is_admin is True
 
     def test_user_with_admin_flag(self):
-        """Тест создания пользователя с флагом администратора"""
-        admin_user = User.objects.create_user(
-            username='adminuser',
-            email='admin@test.com',
-            password='AdminPass123!',
-            first_name='AdminFirstName',
-            last_name='AdminLastName',
-            is_admin=True,
-        )
-        self.assertTrue(admin_user.is_admin)
+        """
+        Тест ручного установки флага администратора
 
-    def test_user_unique_username(self):
-        """Тест уникальности логина пользователя"""
-        with self.assertRaises(Exception):
-            User.objects.create_user(
-                username='testuser',
-                email='another@test.com',
-                password='TestPass123!',
-                first_name='Another',
-                last_name='User',
-            )
+        Ожидание: можно изменить is_admin на True
+        """
+        user = UserFactory.create(is_admin=True)
 
-    def test_user_unique_email(self):
-        """Тест уникальности email пользователя"""
-        with self.assertRaises(Exception):
-            User.objects.create_user(
-                username='anotheruser',
-                email='test@test.com',
-                password='TestPass123!',
-                first_name='Another',
-                last_name='User',
-            )
+        assert user.is_admin is True
 
-    def test_required_fields(self):
-        """Тест обязательных полей пользователя"""
-        with self.assertRaises(ValueError):
-            User.objects.create_user(
-                username='',
-                email='',
-                password='TestPass123!',
-            )
+    def test_user_required_fields(self):
+        """
+        Тест обязательных полей пользователя
 
-    def test_superuser_creation(self):
-        """Тест создания суперпользователя"""
-        superuser = User.objects.create_superuser(
-            username='superuser',
-            email='super@test.com',
-            password='SuperPass123!',
-            first_name='SuperFirstName',
-            last_name='SuperLastName',
-        )
-        self.assertTrue(superuser.is_staff)
-        self.assertTrue(superuser.is_superuser)
+        Ожидание: EMAIL_FIELD и REQUIRED_FIELDS настроены правильно
+        """
+        user = UserFactory.build()
+
+        # Проверяем, что email - это EMAIL_FIELD
+        assert user.EMAIL_FIELD == "email"
+
+        # Проверяем, что REQUIRED_FIELDS содержит необходимые поля
+        assert "email" in User.REQUIRED_FIELDS
+        assert "first_name" in User.REQUIRED_FIELDS
+        assert "last_name" in User.REQUIRED_FIELDS

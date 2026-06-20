@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { clearErrors, setErrors, setLoading, setToken, setUser } from '../store/slices/authSlice';
 import { useApi } from './useApi';
 import { useNotifications } from './useNotifications';
 
 export const useAuthSubmit = (onSuccessRedirectPath) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { request } = useApi();
   const { error, success } = useNotifications();
 
@@ -33,8 +35,10 @@ export const useAuthSubmit = (onSuccessRedirectPath) => {
 
       if (apiUrl.includes('/login')) {
         success('Вы успешно вошли в систему');
+        navigate(onSuccessRedirectPath)
       } else if (apiUrl.includes('/register')) {
         success('Регистрация прошла успешно!');
+        navigate(onSuccessRedirectPath)
       }
 
       return response.data;
@@ -56,5 +60,5 @@ export const useAuthSubmit = (onSuccessRedirectPath) => {
 
       throw err;
     }
-  }, [dispatch, request, error, success, onSuccessRedirectPath]);
+  }, [dispatch, request, success, navigate, onSuccessRedirectPath, error]);
 }

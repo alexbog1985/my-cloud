@@ -35,7 +35,7 @@ export default function FileUpload({ onUploadSuccess }) {
       await onUploadSuccess(selectedFile, comment);
       setSelectedFile(null);
       setComment('');
-    } catch (error) {
+    } catch {
       setError('Ошибка загрузки файла');
     }
   };

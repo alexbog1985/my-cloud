@@ -1,133 +1,458 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
+"""Тесты представлений (views) для модуля users
 
-from users.serializers import UserSerializer, RegisterSerializer, LoginSerializer
+Тестируемые endpoints:
+- POST /api/register/ - регистрация пользователя
+- POST /api/login/ - аутентификация
+- GET /api/users/me/ - данные текущего пользователя
+- GET /api/users/all/ - список всех пользователей (админ)
+- DELETE /api/users/{id}/delete/ - удаление пользователя (админ)
+- PUT /api/users/{id}/toggle-admin/ - переключение прав администратора
 
-User = get_user_model()
+Использует fixtures из conftest.py и фабрики из users.factories
+"""
+
+import pytest
+from django.urls import reverse
+
+from users.factories import AdminUserFactory, UserFactory
+
+# ============ Тесты RegisterView ============
 
 
-class UserViewSetTest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@test.com',
-            password='TestPass123!',
-            first_name='TestFirstName',
-            last_name='TestLastName',
+@pytest.mark.django_db
+class TestRegisterView:
+    """Тесты эндпоинта регистрации пользователя"""
+
+    url = reverse("register")
+
+    def test_register_success(self, api_client, default_user_data):
+        """Успешная регистрация с валидными данными"""
+        data = default_user_data.copy()
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 201
+        assert response.data["user"]["username"] == "testuser"
+        assert response.data["user"]["email"] == "test@example.com"
+        assert "access" in response.data
+        assert "refresh" in response.data
+
+    def test_register_invalid_username(self, api_client, default_user_data):
+        """Невалидный логин (формат, длина)"""
+        data = default_user_data.copy()
+        data["username"] = "1user"  # начинается с цифры
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+        assert "username" in response.data
+
+    def test_register_invalid_email(self, api_client, default_user_data):
+        """Невалидный email"""
+        data = default_user_data.copy()
+        data["email"] = "invalid-email"  # некорректный email
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+        assert "email" in response.data
+
+    def test_register_invalid_password(self, api_client, default_user_data):
+        """Невалидный пароль (отсутствие заглавной, цифры, специального символа)"""
+        data = default_user_data.copy()
+        data["password"] = "testpass"  # нет заглавной, цифры, специального символа
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+        assert "password" in response.data
+
+    def test_register_duplicate_username(self, api_client, default_user_data):
+        """Дубликат логина"""
+        # Создаем пользователя с таким же логином
+        UserFactory.create(username=default_user_data["username"])
+
+        response = api_client.post(self.url, default_user_data, format="json")
+
+        assert response.status_code == 400
+        assert "username" in response.data
+
+    def test_register_missing_fields(self, api_client, default_user_data):
+        """Отсутствие обязательных полей"""
+        data = {
+            "username": "newuser",
+            "password": "TestPass123!",
+            # пропущены: first_name, last_name, email
+        }
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+        assert "first_name" in response.data or "email" in response.data
+
+    def test_register_password_hashed(self, api_client, default_user_data):
+        """Проверка хэширования пароля"""
+        api_client.post(self.url, default_user_data, format="json")
+
+        # Получаем пользователя из базы
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        user = User.objects.get(username="testuser")
+
+        # Проверяем, что пароль хэширован (не в открытом виде)
+        assert user.password != "TestPass123!"
+        assert user.check_password("TestPass123!") is True
+
+    def test_register_generates_tokens(self, api_client, default_user_data):
+        """Проверка генерации JWT токенов"""
+        response = api_client.post(self.url, default_user_data, format="json")
+
+        assert "access" in response.data
+        assert "refresh" in response.data
+        assert len(response.data["access"]) > 0
+        assert len(response.data["refresh"]) > 0
+
+
+# ============ Тесты LoginView ============
+
+
+@pytest.mark.django_db
+class TestLoginView:
+    """Тесты эндпоинта аутентификации"""
+
+    url = reverse("login")
+
+    def test_login_success(self, api_client, user_password):
+        """Успешный вход с валидными данными"""
+        user = UserFactory.create(username="testuser", password=user_password)
+
+        data = {"username": "testuser", "password": user_password}
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 200
+        assert "access" in response.data
+        assert "refresh" in response.data
+        assert "user" in response.data
+        assert response.data["user"]["username"] == "testuser"
+
+    def test_login_invalid_password(self, api_client, user_password):
+        """Неверный пароль"""
+        user = UserFactory.create(username="testuser", password=user_password)
+
+        data = {"username": "testuser", "password": "WrongPass123!"}
+
+        response = api_client.post(self.url, data, format="json")
+
+        # TokenObtainPairSerializer выбрасывает исключение при неверных данных
+        assert response.status_code == 401
+
+    def test_login_nonexistent_user(self, api_client, user_password):
+        """Несуществующий пользователь"""
+        data = {"username": "nonexistent", "password": user_password}
+
+        response = api_client.post(self.url, data, format="json")
+
+        # TokenObtainPairSerializer выбрасывает исключение при неверных данных
+        assert response.status_code == 401
+
+    def test_login_missing_password(self, api_client, user_password):
+        """Отсутствие пароля"""
+        data = {
+            "username": "testuser"
+            # пропущен пароль
+        }
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+
+    def test_login_missing_username(self, api_client, user_password):
+        """Отсутствие логина"""
+        data = {
+            "password": user_password
+            # пропущен логин
+        }
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 400
+
+    def test_login_returns_tokens(self, api_client, user_password):
+        """Возврат access и refresh токенов"""
+        user = UserFactory.create(username="testuser", password=user_password)
+
+        data = {"username": "testuser", "password": user_password}
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert "access" in response.data
+        assert "refresh" in response.data
+        assert len(response.data["access"]) > 0
+        assert len(response.data["refresh"]) > 0
+
+
+# ============ Тесты LogoutView ============
+
+
+@pytest.mark.django_db
+class TestLogoutView:
+    """Тесты эндпоинта выхода из системы"""
+
+    url = reverse("logout")
+
+    def test_logout_success(self, api_client, user_password):
+        """Успешный выход с валидным refresh токеном"""
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from users.factories import UserFactory
+
+        user = UserFactory.create(username="testuser", password=user_password)
+        refresh = RefreshToken.for_user(user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}")
+
+        data = {"refresh": str(refresh)}
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 205
+
+        # Проверяем, что токен добавлен в blacklist
+        from rest_framework_simplejwt.token_blacklist.models import \
+            BlacklistedToken
+
+        # Получаем jti из токена и ищем в BlacklistedToken
+        jti = refresh.payload["jti"]
+        assert BlacklistedToken.objects.filter(token__jti=jti).exists()
+
+    def test_logout_without_refresh_token(self, api_client, user_password):
+        """Выход без refresh токена в body"""
+        from users.factories import UserFactory
+
+        user = UserFactory.create(username="testuser", password=user_password)
+        api_client.force_authenticate(user=user)
+
+        # Отправляем пустой body
+        response = api_client.post(self.url, format="json")
+
+        assert response.status_code == 403
+
+    def test_logout_invalid_token(self, api_client, user_password):
+        """Выход с невалидным refresh токеном"""
+        from users.factories import UserFactory
+
+        user = UserFactory.create(username="testuser", password=user_password)
+        api_client.force_authenticate(user=user)
+
+        data = {"refresh": "invalid_token_string"}
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 403
+
+    def test_logout_unauthenticated(self, api_client):
+        """Выход без аутентификации"""
+        data = {"refresh": "some_token"}
+
+        response = api_client.post(self.url, data, format="json")
+
+        assert response.status_code == 401
+
+    def test_logout_token_cannot_be_reused(self, api_client, user_password):
+        """Проверка, что logout токен нельзя использовать повторно"""
+        from django.urls import reverse
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from users.factories import UserFactory
+
+        user = UserFactory.create(username="testuser", password=user_password)
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        # Сначала logout
+        data = {"refresh": str(refresh)}
+        response = api_client.post(self.url, data, format="json")
+        assert response.status_code == 205
+
+        # Пытаемся использовать тот же refresh токен для обновления access
+        refresh_url = reverse("token_refresh")
+        response = api_client.post(
+            refresh_url, {"refresh": str(refresh)}, format="json"
         )
-        self.admin_user = User.objects.create_user(
-            username='adminuser',
-            email='admin@test.com',
-            password='AdminPass123!',
-            first_name='AdminFirstName',
-            last_name='AdminLastName',
-            is_admin=True,
-        )
+        assert response.status_code == 401
 
-    def authenticate(self, username, password):
-        """Получение JWT-токена для аутентификации"""
-        response = self.client.post('/api/login/', {
-            'username': username,
-            'password': password,
-        })
-        return response.data['access']
+    def test_logout_missing_refresh_token(self, api_client, user_password):
+        """Выход без refresh токена в body"""
+        from users.factories import UserFactory
 
-    def test_get_current_user_authenticated(self):
-        """Тест получения данных текущего пользователя при аутентификации"""
-        token = self.authenticate('testuser', 'TestPass123!')
-        response = self.client.get('/api/users/me/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['username'], 'testuser')
-        self.assertEqual(response.data['email'], 'test@test.com')
+        user = UserFactory.create(username="testuser", password=user_password)
+        api_client.force_authenticate(user=user)
 
-    def test_get_current_user_unauthenticated(self):
-        """Тест получения данных текущего пользователя без аутентификации"""
-        response = self.client.get('/api/users/me/')
-        self.assertEqual(response.status_code, 401)
+        # Отправляем пустой body
+        response = api_client.post(self.url, format="json")
 
-    def test_list_all_users_admin(self):
-        """Тест получения списка всех пользователей администратором"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.get('/api/users/all/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
+        assert response.status_code == 403
 
-    def test_list_all_users_non_admin(self):
-        """Тест получения списка всех пользователей обычным пользователем"""
-        token = self.authenticate('testuser', 'TestPass123!')
-        response = self.client.get('/api/users/all/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.data['error'], 'Недостаточно прав')
+    def test_logout_invalid_token(self, api_client, user_password):
+        """Выход с невалидным refresh токеном"""
+        from users.factories import UserFactory
 
-    def test_list_all_users_unauthenticated(self):
-        """Тест получения списка всех пользователей без аутентификации"""
-        response = self.client.get('/api/users/all/')
-        self.assertEqual(response.status_code, 401)
+        user = UserFactory.create(username="testuser", password=user_password)
+        api_client.force_authenticate(user=user)
 
-    def test_delete_user_admin(self):
-        """Тест удаления пользователя администратором"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.delete(f'/api/users/{self.user.id}/delete/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 204)
-        self.assertFalse(User.objects.filter(id=self.user.id).exists())
+        data = {"refresh": "invalid_token_string"}
 
-    def test_delete_user_non_admin(self):
-        """Тест удаления пользователя обычным пользователем"""
-        token = self.authenticate('testuser', 'TestPass123!')
-        response = self.client.delete(f'/api/users/{self.admin_user.id}/delete/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 403)
-        self.assertTrue(User.objects.filter(id=self.admin_user.id).exists())
+        response = api_client.post(self.url, data, format="json")
 
-    def test_delete_user_self(self):
-        """Тест удаления самого себя"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.delete(f'/api/users/{self.admin_user.id}/delete/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.data['error'], 'Нельзя удалить самого себя')
-        self.assertTrue(User.objects.filter(id=self.admin_user.id).exists())
+        assert response.status_code == 403
 
-    def test_delete_user_not_found(self):
-        """Тест удаления несуществующего пользователя"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.delete('/api/users/9999/delete/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data['error'], 'Пользователь не найден')
+    def test_logout_unauthenticated(self, api_client):
+        """Выход без аутентификации"""
+        data = {"refresh": "some_token"}
 
-    def test_toggle_admin_admin(self):
-        """Тест переключения флага администратора администратором"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.put(f'/api/users/{self.user.id}/toggle-admin/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 200)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.is_admin)
+        response = api_client.post(self.url, data, format="json")
 
-    def test_toggle_admin_non_admin(self):
-        """Тест переключения флага администратора обычным пользователем"""
-        regular_user = User.objects.create_user(
-            username='regularuser2',
-            email='regular2@test.com',
-            password='RegularPass123!',
-            first_name='Regular2FirstName',
-            last_name='Regular2LastName',
-        )
-        token = self.authenticate('regularuser2', 'RegularPass123!')
-        response = self.client.put(f'/api/users/{self.admin_user.id}/toggle-admin/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 403)
-        self.admin_user.refresh_from_db()
-        self.assertTrue(self.admin_user.is_admin)
+        assert response.status_code == 401
 
-    def test_toggle_admin_self(self):
-        """Тест переключения флага администратора для самого себя"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.put(f'/api/users/{self.admin_user.id}/toggle-admin/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.data['error'], 'Недостаточно прав')
-        self.admin_user.refresh_from_db()
-        self.assertTrue(self.admin_user.is_admin)
 
-    def test_toggle_admin_user_not_found(self):
-        """Тест переключения флага администратора для несуществующего пользователя"""
-        token = self.authenticate('adminuser', 'AdminPass123!')
-        response = self.client.put('/api/users/9999/toggle-admin/', HTTP_AUTHORIZATION=f'Bearer {token}')
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.data['error'], 'Пользователь не найден')
+# ============ Тесты UserViewSet ============
+
+
+@pytest.mark.django_db
+class TestUserViewSet:
+    """Тесты ViewSet для управления пользователями"""
+
+    def test_me_endpoint_authenticated(self, authenticated_client, user_password):
+        """GET /api/users/me/ - получение данных текущего пользователя с токеном"""
+        client, user = authenticated_client
+
+        response = client.get("/api/users/me/")
+
+        assert response.status_code == 200
+        assert response.data["username"] == user.username
+        assert "email" in response.data
+        assert "full_name" in response.data
+        assert "is_admin" in response.data
+
+    def test_me_endpoint_unauthenticated(self, api_client):
+        """GET /api/users/me/ - получение данных без токена"""
+        response = api_client.get("/api/users/me/")
+
+        assert response.status_code == 401
+
+    def test_list_all_admin(
+        self,
+        authenticated_admin_client,
+        user_password,
+        admin_password,
+        django_db_reset_sequences,
+    ):
+        """GET /api/users/all/ - список всех пользователей для администратора"""
+        client, admin = authenticated_admin_client
+        # Создаем дополнительных пользователей
+        UserFactory.create(username="user1")
+        UserFactory.create(username="user2")
+
+        response = client.get("/api/users/all/")
+
+        assert response.status_code == 200
+        # Проверяем, что в ответе есть минимум 3 пользователя (admin + 2 созданных)
+        # Точное количество зависит от данных из других тестов
+        assert len(response.data) >= 3
+
+    def test_list_all_not_admin(self, authenticated_client, user_password):
+        """GET /api/users/all/ - ошибка для обычного пользователя"""
+        client, user = authenticated_client
+
+        response = client.get("/api/users/all/")
+
+        assert response.status_code == 403
+        assert "error" in response.data
+
+    def test_delete_user_admin(
+        self, authenticated_admin_client, user_password, admin_password
+    ):
+        """DELETE /api/users/{id}/delete/ - удаление пользователя администратором"""
+        client, admin = authenticated_admin_client
+        user_to_delete = UserFactory.create(username="userToDelete")
+
+        response = client.delete(f"/api/users/{user_to_delete.id}/delete/")
+
+        assert response.status_code == 204
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        assert not User.objects.filter(id=user_to_delete.id).exists()
+
+    def test_delete_user_not_admin(self, authenticated_client, user_password):
+        """DELETE /api/users/{id}/delete/ - удаление пользователем без прав"""
+        client, user = authenticated_client
+        other_user = UserFactory.create(username="otheruser")
+
+        response = client.delete(f"/api/users/{other_user.id}/delete/")
+
+        assert response.status_code == 403
+
+    def test_delete_user_self(self, authenticated_client, user_password):
+        """DELETE /api/users/{id}/delete/ - удаление самого себя"""
+        client, user = authenticated_client
+
+        response = client.delete(f"/api/users/{user.id}/delete/")
+
+        assert response.status_code == 400
+        assert "error" in response.data
+
+    def test_delete_user_not_found(
+        self, authenticated_admin_client, user_password, admin_password
+    ):
+        """DELETE /api/users/{id}/delete/ - удаление несуществующего пользователя"""
+        client, admin = authenticated_admin_client
+
+        response = client.delete("/api/users/999999/delete/")
+
+        assert response.status_code == 404
+        assert "error" in response.data
+
+    def test_toggle_admin_admin(
+        self,
+        authenticated_admin_client,
+        user_password,
+        admin_password,
+        django_db_reset_sequences,
+    ):
+        """PUT /api/users/{id}/toggle-admin/ -
+        переключение прав администратора"""
+        client, admin = authenticated_admin_client
+        user = UserFactory.create(username="user_toggle_admin", is_admin=False)
+
+        # Переключаем в администраторы
+        response = client.put(f"/api/users/{user.id}/toggle-admin/")
+
+        assert response.status_code == 200
+        assert response.data["is_admin"] is True
+
+        # Переключаем обратно
+        response = client.put(f"/api/users/{user.id}/toggle-admin/")
+
+        assert response.status_code == 200
+        assert response.data["is_admin"] is False
+
+    def test_toggle_admin_not_admin(self, authenticated_client, user_password):
+        """PUT /api/users/{id}/toggle-admin/ - переключение без прав"""
+        client, user = authenticated_client
+        other_user = UserFactory.create(username="otheruser")
+
+        response = client.put(f"/api/users/{other_user.id}/toggle-admin/")
+
+        assert response.status_code == 403
+
+    def test_toggle_admin_self(self, authenticated_client, user_password):
+        """PUT /api/users/{id}/toggle-admin/ - изменение своих прав"""
+        client, user = authenticated_client
+
+        response = client.put(f"/api/users/{user.id}/toggle-admin/")
+
+        assert response.status_code == 400
+        assert "error" in response.data

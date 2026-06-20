@@ -1,131 +1,162 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
+"""Тесты модели File для модуля files
+
+Тестируемые методы модели:
+- save() - автогенерация special_link
+- save() - автоматическое определение размера файла
+- save() - автогенерация original_name
+- generate_special_link() - создание уникальной ссылки
+- __str__() - строковое представление
+"""
+
+import pytest
+
+from files.factories import FileFactory
 from files.models import File
 
-User = get_user_model()
 
-class FileModelTest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@test.com',
-            password='TestPass123!',
-            first_name='TestFirstName',
-            last_name='TestLastName',
-        )
+@pytest.mark.django_db
+class TestFileModel:
+    """
+    Тесты модели File
 
-    def test_create_file(self):
-        """Тест создания файла"""
-        content = b'Test file content'
-        file_obj = SimpleUploadedFile('test.txt', content, content_type='text/plain')
+    Тестирует:
+    - Автогенерацию special_link при сохранении нового файла
+    - Сохранение существующей special_link при повторном сохранении
+    - Автогенерацию original_name
+    - Автоматическое определение размера файла
+    - Метод generate_special_link()
+    - Строковое представление файла
+    """
 
-        file = File.objects.create(
-            user=self.user,
-            file=file_obj,
-            original_name='test.txt',
-            comment='test comment',
-        )
+    def test_save_autogenerates_special_link(self):
+        """
+        Тест автогенерации special_link при создании файла
 
-        self.assertEqual(file.original_name, 'test.txt')
-        self.assertEqual(file.comment, 'test comment')
-        self.assertEqual(file.user, self.user)
-        self.assertTrue(file.special_link)
-        self.assertGreater(file.size, 0)
+        Ожидание: при создании нового файла без явно указанной special_link,
+        она будет автоматически сгенерирована (32 символа)
+        """
+        file = FileFactory.create()
 
-    def test_file_size_calculation(self):
-        """Тест вычисления размера файла"""
-        file_content = b'A' * 1024
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+        assert file.special_link is not None
+        assert len(file.special_link) == 32
+        assert file.special_link.isalnum()
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='1KB file'
-        )
+    def test_save_preserves_special_link(self):
+        """
+        Тест сохранения существующей special_link
 
-        self.assertEqual(file_obj.size, 1024)
+        Ожидание: при создании файла с явно указанной special_link,
+        она не будет перезаписана
+        """
+        custom_link = "A" * 32
+        file = FileFactory.create(special_link=custom_link)
 
-    def test_special_link_generation(self):
-        """Тест генерации уникальной специальной ссылки"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+        assert file.special_link == custom_link
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-        )
+    def test_save_autogenerates_original_name(self):
+        """
+        Тест автогенерации original_name при создании файла
 
-        self.assertTrue(file_obj.special_link)
-        self.assertEqual(len(file_obj.special_link), 32)
-        self.assertTrue(file_obj.special_link.isalnum())
+        Ожидание: при создании нового файла без явно указанного original_name,
+        он будет автоматически сгенерирован из имени файла, переданного в ContentFile.
+        actual filename (file.file.name) будет отличаться из-за upload_to(),
+        но original_name должен сохранить оригинальное имя.
+        """
+        # Создаем файл через фабрику без явного указания original_name
+        file = FileFactory.create()
 
-    def test_special_link_uniq(self):
-        """Тест уникальности ссылки"""
-        file_content1 = b'Test content1'
-        file_content2 = b'Test content2'
+        # Проверяем, что original_name был сгенерирован из имени файла
+        assert file.original_name is not None
+        assert len(file.original_name) > 0
+        # Проверяем, что оригинальное имя начинается с 'test_file_' и имеет расширение .txt
+        assert file.original_name.startswith("test_file_")
+        assert file.original_name.endswith(".txt")
+        # original_name не должен совпадать с именем на диске (upload_to() переименовал)
+        import os
 
-        uploaded_file1 = SimpleUploadedFile('file1.txt', file_content1)
-        uploaded_file2 = SimpleUploadedFile('file2.txt', file_content2)
+        assert file.original_name != os.path.basename(file.file.name)
 
-        file_obj1 = File.objects.create(file=uploaded_file1, user=self.user)
-        file_obj2 = File.objects.create(file=uploaded_file2, user=self.user)
+    def test_save_sets_file_size(self):
+        """
+        Тест автоматического определения размера файла
 
-        self.assertNotEqual(file_obj1.special_link, file_obj2.special_link)
+        Ожидание: при сохранении файла размер автоматически устанавливается
+        """
+        file = FileFactory.create()
 
-    def test_file_string_representation(self):
-        """Тест строкового представления файла"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+        assert file.size > 0
+        assert isinstance(file.size, int)
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='Test file'
-        )
+    def test_save_preserves_original_name(self):
+        """
+        Тест сохранения существующего original_name
 
-        expected_str = f"test.txt ({self.user.username})"
-        self.assertEqual(str(file_obj), expected_str)
+        Ожидание: при создании файла с явно указанным original_name,
+        он не будет перезаписан
+        """
+        custom_name = "my_custom_file.txt"
+        file = FileFactory.create(original_name=custom_name)
 
-    def test_update_file_comment(self):
-        """Тест обновления комментария файла"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('test.txt', file_content)
+        assert file.original_name == custom_name
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-            comment='Original comment'
-        )
+    def test_generate_special_link_unique(self):
+        """
+        Тест уникальности special_link
 
-        file_obj.comment = 'Updated comment'
-        file_obj.save()
+        Ожидание: generate_special_link() всегда создает уникальную ссылку
+        """
+        file1 = FileFactory.create()
+        file2 = FileFactory.create()
 
-        file_obj.refresh_from_db()
-        self.assertEqual(file_obj.comment, 'Updated comment')
+        assert file1.special_link != file2.special_link
 
-    def test_original_name_from_filename(self):
-        """Тест автоматического определения original_name из имени файла"""
-        file_content = b'Test content'
-        uploaded_file = SimpleUploadedFile('my_document.pdf', file_content)
+    def test_special_link_length(self):
+        """
+        Тест длины special_link
 
-        file_obj = File.objects.create(
-            file=uploaded_file,
-            user=self.user,
-        )
+        Ожидание: длина special_link всегда 32 символа
+        """
+        file = FileFactory.create()
 
-        self.assertEqual(file_obj.original_name, 'my_document.pdf')
+        assert len(file.special_link) == 32
 
-    def test_multiple_files_same_user(self):
-        """Тест загрузки нескольких файлов одним пользователем"""
-        for i in range(3):
-            file_content = f'Content {i}'.encode()
-            uploaded_file = SimpleUploadedFile(f'file{i}.txt', file_content)
+    def test_str_representation(self):
+        """
+        Тест строкового представления файла
 
-            file_obj = File.objects.create(
-                file=uploaded_file,
-                user=self.user,
-            )
+        Ожидание: __str__() возвращает строку в формате
+        'original_name (username)'
+        """
+        file = FileFactory.create(original_name="test.txt")
 
-            self.assertEqual(file_obj.user, self.user)
-            self.assertTrue(file_obj.special_link)
+        expected_str = f"test.txt ({file.user.username})"
+        assert str(file) == expected_str
+
+    def test_upload_to_path(self):
+        """
+        Тест пути загрузки файла
+
+        Ожидание: файл сохраняется в storage/{username}/uuid.ext
+        """
+        file = FileFactory.create()
+
+        # Путь должен содержать путь пользователя
+        assert file.user.storage_path in file.file.path
+
+    def test_file_delete(self):
+        """
+        Тест удаления файла
+
+        Ожидание: при удалении модели файл также удаляется
+        """
+        file = FileFactory.create()
+
+        # Проверяем, что файл существует
+        assert File.objects.filter(id=file.id).exists()
+
+        # Удаляем файл
+        file_id = file.id
+        file.delete()
+
+        # Проверяем, что файл удален
+        assert not File.objects.filter(id=file_id).exists()

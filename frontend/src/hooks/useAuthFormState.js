@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { setErrors } from '../store/slices/authSlice';
+import { setErrors, clearErrors } from '../store/slices/authSlice';
 import { validateForm, validateField } from '../utils/validators';
 
 export const useAuthFormState = (formFields) => {
@@ -13,6 +13,10 @@ export const useAuthFormState = (formFields) => {
       [field.name]: '',
     }), {})
   );
+
+  useEffect(() => {
+    dispatch(clearErrors());
+  }, [dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
