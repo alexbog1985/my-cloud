@@ -56,13 +56,19 @@ export default function UsersTable() {
           </tr>
         </thead>
         <tbody>
-        {users.map((user) => (
+        {Array.isArray(users) ? users.map((user) => (
           <tr key={user.id}>
             {columns.map((column) => (
               <td key={column.key}>{column.render(user)}</td>
             ))}
           </tr>
-        ))}
+        )) : (
+          <tr>
+            <td colSpan={columns.length} className="text-center">
+              {users && users.error ? users.error : 'Нет данных о пользователях'}
+            </td>
+          </tr>
+        )}
         </tbody>
       </table>
     </div>
