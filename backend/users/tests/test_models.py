@@ -147,3 +147,32 @@ class TestUserModel:
         assert "email" in User.REQUIRED_FIELDS
         assert "first_name" in User.REQUIRED_FIELDS
         assert "last_name" in User.REQUIRED_FIELDS
+
+    def test_superuser_automatic_is_admin(self):
+        """
+        Тест автоматического установления is_admin для суперпользователя
+
+        Ожидание: при создании пользователя с is_superuser = True,
+        поле is_admin автоматически устанавливается в True
+        """
+        user = UserFactory.create(is_superuser=True)
+
+        assert user.is_superuser is True
+        assert user.is_admin is True
+
+    def test_superuser_save_preserves_is_admin(self):
+        """
+        Тест сохранения is_admin для суперпользователя при повторном сохранении
+
+        Ожидание: при обновлении существующего суперпользователя,
+        поле is_admin сохраняет значение True
+        """
+        user = UserFactory.create(is_superuser=True)
+        original_is_admin = user.is_admin
+
+        # Обновляем пользователя (например, меняем имя)
+        user.first_name = "NewName"
+        user.save()
+
+        assert user.is_admin is original_is_admin
+        assert user.is_admin is True
