@@ -15,7 +15,7 @@ const usersSlice = createSlice({
       state.errors = {}
     },
     setUsers: (state, action) => {
-      state.users = action.payload;
+      state.users = Array.isArray(action.payload) ? action.payload : [];
       state.loading = false;
       state.errors = {};
     },
