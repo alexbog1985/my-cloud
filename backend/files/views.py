@@ -17,11 +17,13 @@ class FileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
 
     def get_queryset(self):
-        if self.request.user.is_admin:
-            user_id = self.request.query_params.get("user")
-            if user_id:
-                return File.objects.filter(user=user_id)
-            return File.objects.all()
+        # Администраторы видят только свои файлы по умолчанию
+        # Для просмотра файлов другого пользователя нужно использовать параметр ?user=<id>
+        user_id = self.request.query_params.get("user")
+        if self.request.user.is_admin and user_id:
+            return File.objects.filter(user=user_id)
+        elif self.request.user.is_admin:
+            return File.objects.filter(user=self.request.user)
         return File.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
